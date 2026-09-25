@@ -1,0 +1,504 @@
+// Schéma de données — SaaS devis/factures FR
+// Principe directeur : toute donnée légalement obligatoire est un champ structuré
+// typé (jamais du texte libre concaténé), pour permettre un futur export Factur-X
+// (PDF/A-3 + XML UBL/CII) sans refonte du modèle.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Authentification (Auth.js / NextAuth — schéma adapter Prisma standard)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String? // null si l'utilisateur ne s'est connecté que via OAuth
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  company  Company?
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Enums métier
+// ---------------------------------------------------------------------------
+
+enum LegalForm {
+  AUTO_ENTREPRENEUR
+  EI
+  EURL
+  SARL
+  SASU
+  SAS
+  AUTRE
+}
+
+// Régime de TVA de l'entreprise émettrice — détermine si la TVA s'applique
+// et quelle mention légale figure sur la facture (art. 293B du CGI ou n° TVA).
+enum VatRegime {
+  FRANCHISE_EN_BASE // TVA non applicable, art. 293B du CGI
+  REEL_SIMPLIFIE
+  REEL_NORMAL
+}
+
+enum DocumentType {
+  QUOTE
+  INVOICE
+  CREDIT_NOTE
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED // verrouillé : une facture a été générée à partir de ce devis
+}
+
+enum InvoiceStatus {
+  DRAFT // modifiable/supprimable librement — pas encore émise, pas de numéro légal figé
+  SENT // émise et numérotée : immuable, correction uniquement via avoir
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED_BY_CREDIT_NOTE
+}
+
+enum PaymentMethod {
+  VIREMENT
+  CHEQUE
+  ESPECES
+  CARTE
+  PRELEVEMENT
+  AUTRE
+}
+
+enum ClientType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// Entreprise (profil vendeur) — saisi une fois, réutilisé partout
+// ---------------------------------------------------------------------------
+
+model Company {
+  id     String @id @default(cuid())
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  legalName      String // raison sociale
+  commercialName String? // nom commercial si différent
+  legalForm      LegalForm
+
+  siren String @db.VarChar(9) // 9 chiffres
+  siret String @db.VarChar(14) // 14 chiffres (établissement siège)
+
+  vatRegime VatRegime
+  vatNumber String? // obligatoire si vatRegime != FRANCHISE_EN_BASE
+
+  // RCS — uniquement pour les formes commerciales qui y sont immatriculées
+  rcsCity   String?
+  rcsNumber String?
+
+  // Capital social — pertinent pour EURL/SARL/SASU/SAS
+  shareCapitalCents Int?
+
+  addressLine1 String
+  addressLine2 String?
+  postalCode   String
+  city         String
+  country      String @default("France")
+
+  email String
+  phone String?
+
+  iban String?
+  bic  String?
+
+  logoUrl String?
+
+  // Mentions légales configurables (mais jamais absentes du PDF généré)
+  defaultPaymentTermsDays  Int    @default(30)
+  latePenaltyRateText      String @default("Taux d'intérêt légal en vigueur, majoré de 10 points (taux BCE + 10 points)")
+  recoveryIndemnityCents   Int    @default(4000) // 40 € — indemnité forfaitaire de recouvrement (loi française)
+  discountPolicyText       String @default("Escompte non applicable")
+
+  // Relances automatiques : décalages en jours après échéance (ex. [7, 15])
+  reminderOffsetsDays Int[] @default([7, 15])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients     Client[]
+  quotes      Quote[]
+  invoices    Invoice[]
+  creditNotes CreditNote[]
+  counters    DocumentCounter[]
+  auditLogs   AuditLog[]
+
+  @@map("companies")
+}
+
+// Compteur atomique par entreprise et par type de document — garantit une
+// numérotation strictement chronologique, sans trou ni doublon.
+model DocumentCounter {
+  id           String       @id @default(cuid())
+  companyId    String
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documentType DocumentType
+  prefix       String // ex: "DEV", "F", "AV"
+  yearlyReset  Boolean      @default(false)
+  currentYear  Int? // utilisé seulement si yearlyReset = true
+  lastNumber   Int          @default(0)
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([companyId, documentType])
+  @@map("document_counters")
+}
+
+// ---------------------------------------------------------------------------
+// Clients
+// ---------------------------------------------------------------------------
+
+model Client {
+  id        String     @id @default(cuid())
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type ClientType @default(INDIVIDUAL)
+  name String // nom / raison sociale du client
+
+  siret     String?
+  vatNumber String?
+
+  addressLine1 String
+  addressLine2 String?
+  postalCode   String
+  city         String
+  country      String @default("France")
+
+  email String?
+  phone String?
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quotes      Quote[]
+  invoices    Invoice[]
+  creditNotes CreditNote[]
+
+  @@index([companyId])
+  @@map("clients")
+}
+
+// ---------------------------------------------------------------------------
+// Devis
+// ---------------------------------------------------------------------------
+
+model Quote {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id])
+
+  number String // ex: "DEV-2026-0001" — unique par entreprise, figé à l'émission
+  status QuoteStatus @default(DRAFT)
+
+  issueDate  DateTime
+  validUntil DateTime?
+  notes      String?
+
+  subtotalHtCents Int @default(0)
+  totalVatCents   Int @default(0)
+  totalTtcCents   Int @default(0)
+
+  convertedInvoiceId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines            QuoteLine[]
+  convertedInvoice Invoice?    @relation("QuoteToInvoice", fields: [convertedInvoiceId], references: [id])
+
+  @@unique([companyId, number])
+  @@index([companyId, status])
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  position    Int
+  description String
+
+  quantity        Decimal @db.Decimal(12, 3)
+  unitPriceCents  Int
+  vatRatePer100000 Int // ex: 20% => 20000 ; 5.5% => 5500
+
+  lineHtCents  Int
+  lineVatCents Int
+  lineTtcCents Int
+
+  @@index([quoteId])
+  @@map("quote_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Factures — immuables une fois émises (status != DRAFT)
+// ---------------------------------------------------------------------------
+
+model Invoice {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id])
+
+  number String // figé à l'émission, jamais réattribué
+  status InvoiceStatus @default(DRAFT)
+
+  issueDate   DateTime
+  serviceDate DateTime? // date de la prestation/vente, si différente de issueDate
+  dueDate     DateTime
+
+  notes String?
+
+  // Origine devis (si applicable) — figé pour rester exact même si le devis change
+  originQuoteNumber String?
+  originQuoteDate   DateTime?
+
+  subtotalHtCents Int @default(0)
+  totalVatCents   Int @default(0)
+  totalTtcCents   Int @default(0)
+
+  // Mentions légales figées au moment de l'émission (l'entreprise peut modifier
+  // son profil plus tard sans altérer les factures déjà émises)
+  sellerLegalSnapshot Json?
+  buyerLegalSnapshot  Json?
+  latePenaltyRateText     String?
+  recoveryIndemnityCents  Int?
+  discountPolicyText      String?
+
+  emittedAt DateTime? // horodatage de verrouillage (passage hors DRAFT)
+  pdfStorageKey String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines       InvoiceLine[]
+  payments    Payment[]
+  reminders   Reminder[]
+  creditNotes CreditNote[]
+  originQuote Quote?        @relation("QuoteToInvoice")
+
+  @@unique([companyId, number])
+  @@index([companyId, status])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  position    Int
+  description String
+
+  quantity         Decimal @db.Decimal(12, 3)
+  unitPriceCents   Int
+  vatRatePer100000 Int
+
+  lineHtCents  Int
+  lineVatCents Int
+  lineTtcCents Int
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Avoirs (notes de crédit) — seul moyen de corriger une facture émise
+// ---------------------------------------------------------------------------
+
+model CreditNote {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id])
+
+  number String
+  reason String
+
+  issueDate DateTime
+
+  subtotalHtCents Int @default(0)
+  totalVatCents   Int @default(0)
+  totalTtcCents   Int @default(0)
+
+  sellerLegalSnapshot Json?
+  buyerLegalSnapshot  Json?
+
+  pdfStorageKey String?
+
+  createdAt DateTime @default(now())
+
+  lines CreditNoteLine[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("credit_notes")
+}
+
+model CreditNoteLine {
+  id           String     @id @default(cuid())
+  creditNoteId String
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  position    Int
+  description String
+
+  quantity         Decimal @db.Decimal(12, 3)
+  unitPriceCents   Int
+  vatRatePer100000 Int
+
+  lineHtCents  Int
+  lineVatCents Int
+  lineTtcCents Int
+
+  @@index([creditNoteId])
+  @@map("credit_note_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Paiements
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  amountCents Int
+  paidAt      DateTime
+  method      PaymentMethod
+  reference   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// Relances automatiques
+// ---------------------------------------------------------------------------
+
+model Reminder {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  offsetDays    Int
+  scheduledFor  DateTime
+  status        ReminderStatus @default(PENDING)
+  sentAt        DateTime?
+  providerMessageId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+  @@index([status, scheduledFor])
+  @@map("reminders")
+}
+
+// ---------------------------------------------------------------------------
+// Journal d'audit — traçabilité des actions sensibles
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId     String?
+  action     String // ex: "invoice.emit", "invoice.edit_attempt_blocked"
+  entityType String
+  entityId   String
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("audit_logs")
+}
