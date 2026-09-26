@@ -36,12 +36,17 @@ npm test
 - [x] Profil entreprise (formulaire complet, validation stricte)
 - [x] Services métier (`src/lib/documents.ts`) : création de devis, conversion
       devis → facture brouillon, émission (contrôle de conformité, numéro
-      atomique, snapshots) — **pas encore d'interface ni d'actions serveur**
+      atomique, snapshots), suppression de brouillon, enregistrement du paiement
 - [x] Numérotation atomique (`src/lib/numbering.ts`) + contrôle de conformité
       avant émission (`src/lib/invoice-compliance.ts`), avec tests
 - [x] Immutabilité en base : `prisma/sql/immutability.sql` (triggers à
       appliquer après `prisma migrate`)
-- [ ] Interface devis / factures (formulaires, listes)
+- [x] Interface : clients, devis (formulaire à lignes multiples avec totaux en
+      direct, liste, détail), conversion en facture, factures (liste, détail
+      avec mentions légales figées, émission, suppression de brouillon,
+      « marquer comme payée »), tableau de bord par statut
+- [ ] Modification d'un devis brouillon, envoi/changement de statut d'un devis
+- [ ] Paiements partiels (le modèle les supporte, pas l'interface)
 - [ ] Génération PDF conforme
 - [ ] Envoi par email + relances automatiques
 - [ ] Avoirs (correction de facture émise)

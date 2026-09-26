@@ -242,3 +242,47 @@ export async function emitInvoice(params: { companyId: string; invoiceId: string
     return emitted;
   });
 }
+
+/** Supprime un brouillon (jamais une facture émise) et rouvre le devis d'origine. */
+export async function deleteDraftInvoice(params: { companyId: string; invoiceId: string }) {
+  return prisma.$transaction(async (tx) => {
+    const invoice = await tx.invoice.findFirst({
+      where: { id: params.invoiceId, companyId: params.companyId },
+    });
+    if (!invoice) throw new DocumentError("Facture introuvable.");
+    assertInvoiceMutable(invoice);
+
+    await tx.quote.updateMany({
+      where: { convertedInvoiceId: invoice.id },
+      data: { status: "ACCEPTED", convertedInvoiceId: null },
+    });
+    await tx.invoice.delete({ where: { id: invoice.id } });
+  });
+}
+
+/** Enregistre le règlement du solde restant et passe la facture en « payée ». */
+export async function recordFullPayment(params: {
+  companyId: string;
+  invoiceId: string;
+  method: "VIREMENT" | "CHEQUE" | "ESPECES" | "CARTE" | "PRELEVEMENT" | "AUTRE";
+  paidAt: Date;
+}) {
+  return prisma.$transaction(async (tx) => {
+    const invoice = await tx.invoice.findFirst({
+      where: { id: params.invoiceId, companyId: params.companyId },
+      include: { payments: true },
+    });
+    if (!invoice) throw new DocumentError("Facture introuvable.");
+    if (invoice.status === "DRAFT") throw new DocumentError("Émettez d'abord la facture avant d'enregistrer un paiement.");
+    if (invoice.status === "PAID") throw new DocumentError("Cette facture est déjà payée.");
+
+    const alreadyPaid = invoice.payments.reduce((sum, p) => sum + p.amountCents, 0);
+    const remaining = invoice.totalTtcCents - alreadyPaid;
+    if (remaining <= 0) throw new DocumentError("Il ne reste rien à payer sur cette facture.");
+
+    await tx.payment.create({
+      data: { invoiceId: invoice.id, amountCents: remaining, paidAt: params.paidAt, method: params.method },
+    });
+    await tx.invoice.update({ where: { id: invoice.id }, data: { status: "PAID" } });
+  });
+}
