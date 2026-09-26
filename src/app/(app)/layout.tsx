@@ -4,6 +4,7 @@ const LINKS = [
   { href: "/tableau-de-bord", label: "Tableau de bord" },
   { href: "/devis", label: "Devis" },
   { href: "/factures", label: "Factures" },
+  { href: "/avoirs", label: "Avoirs" },
   { href: "/clients", label: "Clients" },
   { href: "/entreprise/configuration", label: "Mon entreprise" },
 ];

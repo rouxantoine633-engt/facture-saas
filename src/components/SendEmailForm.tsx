@@ -9,7 +9,7 @@ export function SendEmailForm({
   defaultTo,
   lastSent,
 }: {
-  kind: "INVOICE" | "QUOTE";
+  kind: "INVOICE" | "QUOTE" | "CREDIT_NOTE";
   documentId: string;
   defaultTo: string;
   lastSent?: string;

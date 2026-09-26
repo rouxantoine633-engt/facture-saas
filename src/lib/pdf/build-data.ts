@@ -25,19 +25,21 @@ export interface PdfLine {
 
 /** Données normalisées et déjà formatées : le composant PDF ne fait aucune logique métier. */
 export interface PdfDocumentData {
-  kind: "INVOICE" | "QUOTE";
+  kind: "INVOICE" | "QUOTE" | "CREDIT_NOTE";
   title: string;
   number: string;
   numberLabel: string;
   clientName: string;
   dueDateLabel?: string;
   validUntilLabel?: string;
+  rectifiedInvoiceNumber?: string;
   isDraft: boolean;
   dates: Array<{ label: string; value: string }>;
   sellerLines: string[];
   buyerLines: string[];
   lines: PdfLine[];
   totals: DocumentTotals;
+  totalLabel: string;
   franchise: boolean;
   vatMention: string;
   mentions: string[];
@@ -123,6 +125,7 @@ export function buildInvoicePdfData(i: InvoicePdfInput): PdfDocumentData {
     buyerLines: buyerIdentityLines(i.buyer),
     lines: i.lines,
     totals: summarizeDocument(i.lines),
+    totalLabel: "Total TTC",
     franchise: i.seller.vatRegime === "FRANCHISE_EN_BASE",
     vatMention: vatMention(i.seller),
     mentions,
@@ -161,10 +164,51 @@ export function buildQuotePdfData(q: QuotePdfInput): PdfDocumentData {
     buyerLines: buyerIdentityLines(q.buyer),
     lines: q.lines,
     totals: summarizeDocument(q.lines),
+    totalLabel: "Total TTC",
     franchise: q.seller.vatRegime === "FRANCHISE_EN_BASE",
     vatMention: vatMention(q.seller),
     mentions,
     bankLines: [],
     footerLine: `${q.seller.legalName} — SIRET ${q.seller.siret}`,
+  };
+}
+
+export interface CreditNotePdfInput {
+  number: string;
+  issueDate: Date;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  reason: string;
+  lines: PdfLine[];
+  seller: SellerSnapshot;
+  buyer: BuyerSnapshot;
+}
+
+export function buildCreditNotePdfData(c: CreditNotePdfInput): PdfDocumentData {
+  return {
+    kind: "CREDIT_NOTE",
+    title: "AVOIR",
+    number: c.number,
+    clientName: c.buyer.name,
+    rectifiedInvoiceNumber: c.invoiceNumber,
+    numberLabel: `N° ${c.number}`,
+    isDraft: false,
+    dates: [
+      { label: "Date d'émission", value: formatDate(c.issueDate) },
+      { label: "Facture rectifiée", value: `${c.invoiceNumber} du ${formatDate(c.invoiceDate)}` },
+    ],
+    sellerLines: sellerIdentityLines(c.seller),
+    buyerLines: buyerIdentityLines(c.buyer),
+    lines: c.lines,
+    totals: summarizeDocument(c.lines),
+    totalLabel: "Total TTC de l'avoir",
+    franchise: c.seller.vatRegime === "FRANCHISE_EN_BASE",
+    vatMention: vatMention(c.seller),
+    mentions: [
+      `Motif : ${c.reason}`,
+      `Cet avoir vient en déduction de la facture n° ${c.invoiceNumber} du ${formatDate(c.invoiceDate)}.`,
+    ],
+    bankLines: [],
+    footerLine: `${c.seller.legalName} — SIRET ${c.seller.siret}`,
   };
 }

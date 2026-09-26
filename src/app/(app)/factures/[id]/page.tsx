@@ -16,7 +16,11 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   const { company } = await requireCompany();
   const invoice = await prisma.invoice.findFirst({
     where: { id: params.id, companyId: company.id },
-    include: { client: true, lines: { orderBy: { position: "asc" } } },
+    include: {
+      client: true,
+      lines: { orderBy: { position: "asc" } },
+      creditNotes: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!invoice) notFound();
 
@@ -27,6 +31,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   const latePenalty = isDraft ? company.latePenaltyRateText : invoice.latePenaltyRateText;
   const indemnity = isDraft ? company.recoveryIndemnityCents : invoice.recoveryIndemnityCents;
   const discount = isDraft ? company.discountPolicyText : invoice.discountPolicyText;
+  const creditable = invoice.totalTtcCents - invoice.creditNotes.reduce((sum, n) => sum + n.totalTtcCents, 0);
   const franchise = seller.vatRegime === "FRANCHISE_EN_BASE";
   const status = displayInvoiceStatus(invoice);
   const reminders = await prisma.reminder.findMany({
@@ -106,6 +111,26 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
               confirmMessage="Supprimer ce brouillon ?"
             />
           </div>
+        )}
+        {invoice.creditNotes.length > 0 && (
+          <section aria-labelledby="avoirs" className="text-sm">
+            <h2 id="avoirs" className="mb-1 font-semibold">Avoirs liés</h2>
+            <ul className="list-disc pl-5">
+              {invoice.creditNotes.map((n) => (
+                <li key={n.id}>
+                  <Link href={`/avoirs/${n.id}`} className="text-brand-700 underline">
+                    {n.number}
+                  </Link>{" "}
+                  du {formatDate(n.issueDate)} — {formatCentsToEuros(n.totalTtcCents)} TTC
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {!isDraft && creditable > 0 && (
+          <Link href={`/factures/${invoice.id}/avoir/nouveau`} className="inline-block text-brand-700 underline">
+            Émettre un avoir pour corriger cette facture
+          </Link>
         )}
         {!isDraft && (
           <SendEmailForm kind="INVOICE" documentId={invoice.id} defaultTo={invoice.client.email ?? ""} lastSent={lastSent} />

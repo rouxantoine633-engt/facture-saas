@@ -58,7 +58,11 @@ npm test
       et envoie les relances aux paliers configurés (défaut J+7 / J+15), avec
       plan pur testé (`src/lib/reminders.ts`), anti-doublon en base et reprise
       des échecs
-- [ ] Avoirs (correction de facture émise)
+- [x] Avoirs (`src/lib/credit-notes.ts`, `/avoirs`) : correction totale ou
+      partielle d'une facture émise, numérotation propre (AV-), mentions
+      vendeur/client reprises de la facture, PDF, envoi par email, triggers SQL
+      d'immutabilité, statut de la facture mis à jour, restes à payer et
+      relances tenant compte des avoirs
 - [ ] Export comptable CSV/Excel
 
 ## Principes de conformité appliqués
@@ -130,6 +134,12 @@ un expert-comptable et/ou un juriste avant mise en production :
     (mise en demeure = courrier recommandé) sont à valider. Si la tâche
     quotidienne ne tourne pas un jour, seul le palier le plus récent est envoyé.
     Prévoir une supervision de l'échec du cron.
+12. **Avoirs** : le plafond est contrôlé sur le montant TTC total, pas ligne à
+    ligne ; un avoir peut donc porter sur d'autres lignes/taux que la facture.
+    Les montants d'un avoir sont stockés en positif (le document est libellé
+    « AVOIR ») : l'export comptable devra les inverser. Aucun remboursement
+    n'est géré. Traitement de la TVA d'un avoir sur facture déjà déclarée à
+    valider avec l'expert-comptable.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations

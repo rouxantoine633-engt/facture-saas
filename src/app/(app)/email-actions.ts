@@ -8,7 +8,7 @@ import { sendDocumentByEmail } from "@/lib/email/send-document";
 import { requireCompany } from "@/lib/session";
 
 const schema = z.object({
-  kind: z.enum(["INVOICE", "QUOTE"]),
+  kind: z.enum(["INVOICE", "QUOTE", "CREDIT_NOTE"]),
   documentId: z.string().min(1),
   to: z.string().trim().email("Adresse email du destinataire invalide"),
   message: z.string().trim().max(2000, "Le message est trop long (2000 caractères maximum)").optional(),
@@ -27,6 +27,7 @@ export async function sendDocumentEmailAction(input: z.input<typeof schema>): Pr
     throw e;
   }
 
-  revalidatePath(parsed.data.kind === "INVOICE" ? `/factures/${parsed.data.documentId}` : `/devis/${parsed.data.documentId}`);
+  const base = { INVOICE: "/factures", QUOTE: "/devis", CREDIT_NOTE: "/avoirs" }[parsed.data.kind];
+  revalidatePath(`${base}/${parsed.data.documentId}`);
   return {};
 }

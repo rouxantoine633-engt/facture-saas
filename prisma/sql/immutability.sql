@@ -51,3 +51,20 @@ DROP TRIGGER IF EXISTS invoice_lines_guard ON "invoice_lines";
 CREATE TRIGGER invoice_lines_guard
   BEFORE INSERT OR UPDATE OR DELETE ON "invoice_lines"
   FOR EACH ROW EXECUTE FUNCTION guard_emitted_invoice_lines();
+
+-- Avoirs : émis dès leur création, donc immuables (ni modification ni suppression).
+CREATE OR REPLACE FUNCTION forbid_credit_note_change() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'Un avoir est non modifiable : émettez un nouvel avoir si nécessaire.';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS credit_notes_guard ON "credit_notes";
+CREATE TRIGGER credit_notes_guard
+  BEFORE UPDATE OR DELETE ON "credit_notes"
+  FOR EACH ROW EXECUTE FUNCTION forbid_credit_note_change();
+
+DROP TRIGGER IF EXISTS credit_note_lines_guard ON "credit_note_lines";
+CREATE TRIGGER credit_note_lines_guard
+  BEFORE UPDATE OR DELETE ON "credit_note_lines"
+  FOR EACH ROW EXECUTE FUNCTION forbid_credit_note_change();

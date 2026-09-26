@@ -13,11 +13,12 @@ function singleLine(value: string): string {
 }
 
 export interface DocumentEmailInput {
-  kind: "INVOICE" | "QUOTE";
+  kind: "INVOICE" | "QUOTE" | "CREDIT_NOTE";
   companyName: string;
   clientName: string;
   number: string;
   totalTtcLabel: string;
+  invoiceNumber?: string; // avoir : facture rectifiée
   dueDateLabel?: string; // facture
   validUntilLabel?: string; // devis
   customMessage?: string;
@@ -32,13 +33,17 @@ export interface BuiltEmail {
 export function buildDocumentEmail(i: DocumentEmailInput): BuiltEmail {
   const company = singleLine(i.companyName);
   const isInvoice = i.kind === "INVOICE";
-  const noun = isInvoice ? "facture" : "devis";
+  const noun = isInvoice ? "facture" : i.kind === "QUOTE" ? "devis" : "avoir";
 
-  const subject = `${isInvoice ? "Facture" : "Devis"} ${singleLine(i.number)} de ${company}`;
+  const subject = `${isInvoice ? "Facture" : i.kind === "QUOTE" ? "Devis" : "Avoir"} ${singleLine(i.number)} de ${company}`;
 
   const paragraphs = [
     `Bonjour ${singleLine(i.clientName)},`,
-    isInvoice
+    i.kind === "CREDIT_NOTE"
+      ? `Veuillez trouver ci-joint l'avoir n° ${i.number} d'un montant de ${i.totalTtcLabel} TTC${
+          i.invoiceNumber ? `, en déduction de la facture n° ${i.invoiceNumber}` : ""
+        }.`
+      : isInvoice
       ? `Veuillez trouver ci-joint la facture n° ${i.number} d'un montant de ${i.totalTtcLabel} TTC${
           i.dueDateLabel ? `, à régler avant le ${i.dueDateLabel}` : ""
         }.`

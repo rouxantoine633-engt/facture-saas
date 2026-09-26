@@ -3,6 +3,7 @@ import type { Client, Company, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeLineTotals, summarizeDocument } from "@/lib/money";
 import { allocateDocumentNumber } from "@/lib/numbering";
+import { amountStillDue, statusAfterCreditNote, validateCreditNote } from "@/lib/credit-notes";
 import {
   validateInvoiceForEmission,
   type BuyerSnapshot,
@@ -278,13 +279,113 @@ export async function recordFullPayment(params: {
     if (invoice.status === "DRAFT") throw new DocumentError("Émettez d'abord la facture avant d'enregistrer un paiement.");
     if (invoice.status === "PAID") throw new DocumentError("Cette facture est déjà payée.");
 
-    const alreadyPaid = invoice.payments.reduce((sum, p) => sum + p.amountCents, 0);
-    const remaining = invoice.totalTtcCents - alreadyPaid;
+    if (invoice.status === "CANCELLED_BY_CREDIT_NOTE") {
+      throw new DocumentError("Cette facture a été annulée par un avoir.");
+    }
+    const credits = await tx.creditNote.aggregate({ where: { invoiceId: invoice.id }, _sum: { totalTtcCents: true } });
+    const remaining = amountStillDue({
+      totalTtcCents: invoice.totalTtcCents,
+      paidCents: invoice.payments.reduce((sum, p) => sum + p.amountCents, 0),
+      creditedTtcCents: credits._sum.totalTtcCents ?? 0,
+    });
     if (remaining <= 0) throw new DocumentError("Il ne reste rien à payer sur cette facture.");
 
     await tx.payment.create({
       data: { invoiceId: invoice.id, amountCents: remaining, paidAt: params.paidAt, method: params.method },
     });
     await tx.invoice.update({ where: { id: invoice.id }, data: { status: "PAID" } });
+  });
+}
+
+/**
+ * Émet un avoir sur une facture déjà émise : seul moyen légal de la corriger.
+ * L'avoir reprend les mentions vendeur/client figées de la facture d'origine,
+ * reçoit son propre numéro chronologique et est immuable dès sa création.
+ */
+export async function createCreditNote(params: {
+  companyId: string;
+  invoiceId: string;
+  reason: string;
+  lines: LineDraft[];
+  userId?: string;
+}) {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // Verrou sur la facture : deux avoirs simultanés ne peuvent pas dépasser ensemble son total.
+    await tx.$queryRaw`SELECT "id" FROM "invoices" WHERE "id" = ${params.invoiceId} AND "companyId" = ${params.companyId} FOR UPDATE`;
+
+    const invoice = await tx.invoice.findFirst({
+      where: { id: params.invoiceId, companyId: params.companyId },
+      include: { company: true, payments: true },
+    });
+    if (!invoice) throw new DocumentError("Facture introuvable.");
+    if (invoice.status === "DRAFT") {
+      throw new DocumentError("Un brouillon se modifie directement : un avoir ne concerne que les factures émises.");
+    }
+    if (!invoice.sellerLegalSnapshot || !invoice.buyerLegalSnapshot) {
+      throw new DocumentError("Mentions légales de la facture manquantes.");
+    }
+
+    const franchise = invoice.company.vatRegime === "FRANCHISE_EN_BASE";
+    const { lines, totals } = computeDocumentLines(
+      params.lines.map((l) => ({ ...l, vatRatePer100000: franchise ? 0 : l.vatRatePer100000 }))
+    );
+
+    const credited = await tx.creditNote.aggregate({ where: { invoiceId: invoice.id }, _sum: { totalTtcCents: true } });
+    const alreadyCredited = credited._sum.totalTtcCents ?? 0;
+
+    const problems = validateCreditNote({
+      reason: params.reason,
+      lineCount: lines.length,
+      newTotalTtcCents: totals.totalTtcCents,
+      invoiceTotalTtcCents: invoice.totalTtcCents,
+      alreadyCreditedTtcCents: alreadyCredited,
+    });
+    if (problems.length > 0) throw new DocumentError(problems.join("\n"));
+
+    const issueDate = new Date();
+    const number = await allocateDocumentNumber(tx, {
+      companyId: params.companyId,
+      type: "CREDIT_NOTE",
+      date: issueDate,
+    });
+
+    const creditNote = await tx.creditNote.create({
+      data: {
+        companyId: params.companyId,
+        invoiceId: invoice.id,
+        clientId: invoice.clientId,
+        number,
+        reason: params.reason.trim(),
+        issueDate,
+        subtotalHtCents: totals.subtotalHtCents,
+        totalVatCents: totals.totalVatCents,
+        totalTtcCents: totals.totalTtcCents,
+        sellerLegalSnapshot: invoice.sellerLegalSnapshot as Prisma.InputJsonValue,
+        buyerLegalSnapshot: invoice.buyerLegalSnapshot as Prisma.InputJsonValue,
+        lines: { create: lines },
+      },
+    });
+
+    const nextStatus = statusAfterCreditNote({
+      current: invoice.status,
+      totalTtcCents: invoice.totalTtcCents,
+      creditedTtcCents: alreadyCredited + totals.totalTtcCents,
+      paidCents: invoice.payments.reduce((sum, p) => sum + p.amountCents, 0),
+    });
+    if (nextStatus !== invoice.status) {
+      await tx.invoice.update({ where: { id: invoice.id }, data: { status: nextStatus } });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        companyId: params.companyId,
+        userId: params.userId,
+        action: "credit_note.emit",
+        entityType: "CreditNote",
+        entityId: creditNote.id,
+        metadata: { number, invoiceNumber: invoice.number, totalTtcCents: totals.totalTtcCents },
+      },
+    });
+    return creditNote;
   });
 }

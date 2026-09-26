@@ -7,6 +7,7 @@ import { buildReminderEmail } from "@/lib/email/templates";
 import { loadInvoicePdf } from "@/lib/pdf/load";
 import { formatEurosForPdf } from "@/lib/pdf/format";
 import { renderPdfBuffer } from "@/lib/pdf/render";
+import { amountStillDue } from "@/lib/credit-notes";
 import { isFirmReminder, planReminders, type ExistingReminder } from "@/lib/reminders";
 
 const MAX_INVOICES_PER_RUN = 200;
@@ -32,7 +33,7 @@ export async function runReminderJob(now: Date = new Date()): Promise<ReminderJo
 
   const invoices = await prisma.invoice.findMany({
     where: { status: "OVERDUE", company: { reminderOffsetsDays: { isEmpty: false } } },
-    include: { company: true, client: true, payments: true, reminders: true },
+    include: { company: true, client: true, payments: true, reminders: true, creditNotes: true },
     orderBy: { dueDate: "asc" },
     take: MAX_INVOICES_PER_RUN,
   });
@@ -62,6 +63,8 @@ export async function runReminderJob(now: Date = new Date()): Promise<ReminderJo
       summary.cancelled++;
     }
     if (plan.toSend === null) continue;
+
+    if (stillDue(invoice) <= 0) continue; // soldée par des avoirs entre-temps
 
     if (!invoice.client.email) {
       summary.skippedNoEmail++;
@@ -113,13 +116,12 @@ async function claimReminder(invoiceId: string, offsetDays: number, now: Date): 
 }
 
 type InvoiceForReminder = Prisma.InvoiceGetPayload<{
-  include: { company: true; client: true; payments: true; reminders: true };
+  include: { company: true; client: true; payments: true; reminders: true; creditNotes: true };
 }>;
 
 async function sendReminder(invoice: InvoiceForReminder, offsetDays: number): Promise<void> {
   const { company, client } = invoice;
-  const paid = invoice.payments.reduce((sum, p) => sum + p.amountCents, 0);
-  const remaining = invoice.totalTtcCents - paid;
+  const remaining = stillDue(invoice);
 
   const loaded = await loadInvoicePdf(company, invoice.id);
   if (!loaded) throw new EmailError("Facture introuvable pour la relance");
@@ -143,5 +145,13 @@ async function sendReminder(invoice: InvoiceForReminder, offsetDays: number): Pr
     senderName: company.commercialName || company.legalName,
     replyTo: { email: company.email, name: company.legalName },
     attachments: [{ name: loaded.filename, content: await renderPdfBuffer(loaded.data) }],
+  });
+}
+
+function stillDue(invoice: InvoiceForReminder): number {
+  return amountStillDue({
+    totalTtcCents: invoice.totalTtcCents,
+    paidCents: invoice.payments.reduce((sum, p) => sum + p.amountCents, 0),
+    creditedTtcCents: invoice.creditNotes.reduce((sum, c) => sum + c.totalTtcCents, 0),
   });
 }

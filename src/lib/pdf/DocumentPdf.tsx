@@ -113,7 +113,7 @@ export function DocumentPdf({ data }: { data: PdfDocumentData }) {
             </>
           )}
           <View style={[styles.totalRow, styles.grand]}>
-            <Text>Total TTC</Text>
+            <Text>{data.totalLabel}</Text>
             <Text>{formatEurosForPdf(data.totals.totalTtcCents)}</Text>
           </View>
         </View>

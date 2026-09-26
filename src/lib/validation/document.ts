@@ -33,3 +33,15 @@ export const quoteSchema = z.object({
 });
 
 export type QuoteInput = z.input<typeof quoteSchema>;
+
+export const creditNoteSchema = z.object({
+  invoiceId: z.string().min(1),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Indiquez le motif de l'avoir (ex : erreur de prix, prestation annulée)")
+    .max(500, "Le motif est trop long (500 caractères maximum)"),
+  lines: z.array(lineSchema).min(1, "Ajoutez au moins une ligne à l'avoir"),
+});
+
+export type CreditNoteInput = z.input<typeof creditNoteSchema>;

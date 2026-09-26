@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildInvoicePdfData, buildQuotePdfData, type InvoicePdfInput } from "./build-data";
+import { buildCreditNotePdfData, buildInvoicePdfData, buildQuotePdfData, type InvoicePdfInput } from "./build-data";
 import { formatEurosForPdf } from "./format";
 import { computeLineTotals } from "@/lib/money";
 
@@ -117,5 +117,34 @@ describe("formatEurosForPdf", () => {
   it("n'émet aucun espace insécable (absent de la police PDF)", () => {
     expect(formatEurosForPdf(123456789)).not.toMatch(/[  ]/);
     expect(formatEurosForPdf(123456)).toMatch(/1 234,56 €/);
+  });
+});
+
+describe("buildCreditNotePdfData", () => {
+  const data = buildCreditNotePdfData({
+    number: "AV-2026-0001",
+    issueDate: new Date("2026-02-01"),
+    invoiceNumber: "F-2026-0001",
+    invoiceDate: new Date("2026-01-10"),
+    reason: "Prestation annulée",
+    lines: [line],
+    seller: input().seller,
+    buyer: input().buyer,
+  });
+
+  it("référence la facture rectifiée par son numéro et sa date", () => {
+    expect(data.title).toBe("AVOIR");
+    expect(data.dates).toContainEqual({ label: "Facture rectifiée", value: "F-2026-0001 du 10/01/2026" });
+    expect(data.mentions.join("\n")).toContain("Motif : Prestation annulée");
+  });
+
+  it("n'inclut ni échéance ni pénalités de retard", () => {
+    expect(data.dates.map((d) => d.label)).not.toContain("Date d'échéance");
+    expect(data.mentions.join("\n")).not.toContain("Pénalités");
+  });
+
+  it("porte son propre numéro et un libellé de total dédié", () => {
+    expect(data.numberLabel).toBe("N° AV-2026-0001");
+    expect(data.totalLabel).toBe("Total TTC de l'avoir");
   });
 });

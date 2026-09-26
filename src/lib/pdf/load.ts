@@ -2,7 +2,7 @@ import type { Company } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/documents";
 import type { BuyerSnapshot, SellerSnapshot } from "@/lib/invoice-compliance";
-import { buildInvoicePdfData, buildQuotePdfData, type PdfDocumentData } from "./build-data";
+import { buildCreditNotePdfData, buildInvoicePdfData, buildQuotePdfData, type PdfDocumentData } from "./build-data";
 
 export interface LoadedPdf {
   data: PdfDocumentData;
@@ -75,4 +75,36 @@ export async function loadQuotePdf(company: Company, quoteId: string): Promise<L
   });
 
   return { data, filename: `${quote.number}.pdf` };
+}
+
+export async function loadCreditNotePdf(company: Company, creditNoteId: string): Promise<LoadedPdf | null> {
+  const note = await prisma.creditNote.findFirst({
+    where: { id: creditNoteId, companyId: company.id },
+    include: { invoice: true, lines: { orderBy: { position: "asc" } } },
+  });
+  if (!note) return null;
+
+  const seller = note.sellerLegalSnapshot as SellerSnapshot | null;
+  const buyer = note.buyerLegalSnapshot as BuyerSnapshot | null;
+  if (!seller || !buyer) throw new Error(`Mentions légales manquantes sur l'avoir ${note.id}`);
+
+  const data = buildCreditNotePdfData({
+    number: note.number,
+    issueDate: note.issueDate,
+    invoiceNumber: note.invoice.number,
+    invoiceDate: note.invoice.issueDate,
+    reason: note.reason,
+    lines: note.lines.map((l) => ({
+      description: l.description,
+      quantity: l.quantity.toString(),
+      unitPriceCents: l.unitPriceCents,
+      vatRatePer100000: l.vatRatePer100000,
+      lineHtCents: l.lineHtCents,
+      lineVatCents: l.lineVatCents,
+      lineTtcCents: l.lineTtcCents,
+    })),
+    seller,
+    buyer,
+  });
+  return { data, filename: `${note.number}.pdf` };
 }
