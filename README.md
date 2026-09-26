@@ -63,7 +63,10 @@ npm test
       vendeur/client reprises de la facture, PDF, envoi par email, triggers SQL
       d'immutabilité, statut de la facture mis à jour, restes à payer et
       relances tenant compte des avoirs
-- [ ] Export comptable CSV/Excel
+- [x] Export comptable (`/export`) : journal des ventes (factures émises + avoirs
+      en négatif, ventilation TVA par taux) et encaissements, en CSV Excel-FR
+      (UTF-8 BOM, `;`, virgule décimale) avec protection contre l'injection de
+      formules ; clients repris des mentions figées à l'émission
 
 ## Principes de conformité appliqués
 
@@ -140,6 +143,11 @@ un expert-comptable et/ou un juriste avant mise en production :
     « AVOIR ») : l'export comptable devra les inverser. Aucun remboursement
     n'est géré. Traitement de la TVA d'un avoir sur facture déjà déclarée à
     valider avec l'expert-comptable.
+13. **Export comptable** : le format est un journal générique, pas un fichier des
+    écritures comptables (FEC) ni un import propre à un logiciel. Le FEC est
+    obligatoire en cas de contrôle fiscal pour une comptabilité informatisée :
+    à confirmer avec l'expert-comptable (format attendu, comptes, journaux).
+    L'export est une aide, pas une pièce comptable certifiée.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations

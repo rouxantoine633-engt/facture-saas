@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/factures", label: "Factures" },
   { href: "/avoirs", label: "Avoirs" },
   { href: "/clients", label: "Clients" },
+  { href: "/export", label: "Export comptable" },
   { href: "/entreprise/configuration", label: "Mon entreprise" },
 ];
 
