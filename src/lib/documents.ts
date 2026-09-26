@@ -34,6 +34,8 @@ export function sellerSnapshotFromCompany(c: Company): SellerSnapshot {
     city: c.city,
     country: c.country,
     email: c.email,
+    iban: c.iban,
+    bic: c.bic,
   };
 }
 

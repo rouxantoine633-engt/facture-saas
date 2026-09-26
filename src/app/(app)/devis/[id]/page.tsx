@@ -51,6 +51,9 @@ export default async function QuoteDetailPage({ params }: { params: { id: string
             pendingLabel="Conversion…"
           />
         )}
+        <a href={`/devis/${quote.id}/pdf`} className="text-brand-700 underline">
+          Télécharger le PDF
+        </a>
         {quote.convertedInvoiceId && (
           <Link href={`/factures/${quote.convertedInvoiceId}`} className="text-brand-700 underline">
             Voir la facture générée

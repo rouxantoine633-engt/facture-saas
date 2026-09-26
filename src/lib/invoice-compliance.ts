@@ -18,6 +18,8 @@ export interface SellerSnapshot {
   city: string;
   country: string;
   email: string;
+  iban?: string | null;
+  bic?: string | null;
 }
 
 export interface BuyerSnapshot {

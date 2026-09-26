@@ -96,9 +96,14 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
           </div>
         )}
         {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID") && <PayForm invoiceId={invoice.id} />}
-        <Link href="/factures" className="inline-block text-brand-700 underline">
-          Retour aux factures
-        </Link>
+        <div className="flex gap-6">
+          <a href={`/factures/${invoice.id}/pdf`} className="text-brand-700 underline">
+            Télécharger le PDF{isDraft ? " (brouillon)" : ""}
+          </a>
+          <Link href="/factures" className="text-brand-700 underline">
+            Retour aux factures
+          </Link>
+        </div>
       </div>
     </div>
   );

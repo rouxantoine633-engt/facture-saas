@@ -47,7 +47,10 @@ npm test
       « marquer comme payée »), tableau de bord par statut
 - [ ] Modification d'un devis brouillon, envoi/changement de statut d'un devis
 - [ ] Paiements partiels (le modèle les supporte, pas l'interface)
-- [ ] Génération PDF conforme
+- [x] Génération PDF (devis + factures, `src/lib/pdf/`) : données légales
+      assemblées par des fonctions pures testées, rendu React-PDF, filigrane
+      « BROUILLON », PDF d'une facture émise rendu depuis ses mentions figées.
+      Ce n'est PAS du PDF/A-3 ni du Factur-X (voir points de conformité)
 - [ ] Envoi par email + relances automatiques
 - [ ] Avoirs (correction de facture émise)
 - [ ] Export comptable CSV/Excel
@@ -102,6 +105,14 @@ un expert-comptable et/ou un juriste avant mise en production :
    droit à l'effacement RGPD. Les triggers bloquent la suppression des
    factures émises : la suppression de compte devra anonymiser/archiver
    plutôt que supprimer. Arbitrage à valider par un juriste.
+8. **PDF non archivé** : le PDF d'une facture émise est régénéré à la demande
+   depuis les données figées (rendu déterministe), mais aucun fichier n'est
+   conservé (`pdfStorageKey` inutilisé). Si l'archivage à valeur probante d'un
+   fichier PDF fixe est exigé, il faudra le stocker à l'émission (R2/S3) ; le
+   PDF/A-3 est par ailleurs requis pour Factur-X.
+9. **Devis** : ses mentions sont lues depuis le profil entreprise actuel (pas
+   de snapshot, contrairement aux factures) ; un devis ancien réimprimé après
+   changement de profil reflète donc les informations à jour.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations
