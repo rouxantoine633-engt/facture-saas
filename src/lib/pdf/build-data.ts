@@ -27,7 +27,11 @@ export interface PdfLine {
 export interface PdfDocumentData {
   kind: "INVOICE" | "QUOTE";
   title: string;
+  number: string;
   numberLabel: string;
+  clientName: string;
+  dueDateLabel?: string;
+  validUntilLabel?: string;
   isDraft: boolean;
   dates: Array<{ label: string; value: string }>;
   sellerLines: string[];
@@ -109,6 +113,9 @@ export function buildInvoicePdfData(i: InvoicePdfInput): PdfDocumentData {
   return {
     kind: "INVOICE",
     title: "FACTURE",
+    number: i.number,
+    clientName: i.buyer.name,
+    dueDateLabel: formatDate(i.dueDate),
     numberLabel: i.isDraft ? "BROUILLON" : `N° ${i.number}`,
     isDraft: i.isDraft,
     dates,
@@ -144,6 +151,9 @@ export function buildQuotePdfData(q: QuotePdfInput): PdfDocumentData {
   return {
     kind: "QUOTE",
     title: "DEVIS",
+    number: q.number,
+    clientName: q.buyer.name,
+    validUntilLabel: q.validUntil ? formatDate(q.validUntil) : undefined,
     numberLabel: `N° ${q.number}`,
     isDraft: false,
     dates,

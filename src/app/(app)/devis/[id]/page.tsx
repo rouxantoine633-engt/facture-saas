@@ -6,6 +6,7 @@ import { formatDate, QUOTE_STATUS_LABELS } from "@/lib/labels";
 import { LinesTable } from "@/components/LinesTable";
 import { ActionButton } from "@/components/ActionButton";
 import { convertQuoteAction } from "../actions";
+import { SendEmailForm } from "@/components/SendEmailForm";
 
 export default async function QuoteDetailPage({ params }: { params: { id: string } }) {
   const { company } = await requireCompany();
@@ -14,6 +15,14 @@ export default async function QuoteDetailPage({ params }: { params: { id: string
     include: { client: true, lines: { orderBy: { position: "asc" } } },
   });
   if (!quote) notFound();
+
+  const lastEmail = await prisma.auditLog.findFirst({
+    where: { companyId: company.id, entityId: quote.id, action: "email.quote_sent" },
+    orderBy: { createdAt: "desc" },
+  });
+  const lastSent = lastEmail
+    ? `Dernier envoi : le ${formatDate(lastEmail.createdAt)} à ${(lastEmail.metadata as { to?: string } | null)?.to ?? ""}`
+    : undefined;
 
   const canConvert = quote.status !== "CONVERTED" && quote.status !== "REJECTED" && quote.status !== "EXPIRED";
   const convert = convertQuoteAction.bind(null, quote.id);
@@ -42,6 +51,10 @@ export default async function QuoteDetailPage({ params }: { params: { id: string
       </div>
 
       {quote.notes && <p className="mt-4 whitespace-pre-line text-sm text-gray-700">{quote.notes}</p>}
+
+      <div className="mt-8">
+        <SendEmailForm kind="QUOTE" documentId={quote.id} defaultTo={quote.client.email ?? ""} lastSent={lastSent} />
+      </div>
 
       <div className="mt-8 flex items-start gap-6">
         {canConvert && (

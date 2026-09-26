@@ -51,7 +51,9 @@ npm test
       assemblées par des fonctions pures testées, rendu React-PDF, filigrane
       « BROUILLON », PDF d'une facture émise rendu depuis ses mentions figées.
       Ce n'est PAS du PDF/A-3 ni du Factur-X (voir points de conformité)
-- [ ] Envoi par email + relances automatiques
+- [x] Envoi par email (Brevo, PDF en pièce jointe, expéditeur plateforme +
+      reply-to de l'utilisateur, plafond 20/jour, journal d'audit)
+- [ ] Relances automatiques (cron) et passage en « En retard » en base
 - [ ] Avoirs (correction de facture émise)
 - [ ] Export comptable CSV/Excel
 
@@ -113,6 +115,11 @@ un expert-comptable et/ou un juriste avant mise en production :
 9. **Devis** : ses mentions sont lues depuis le profil entreprise actuel (pas
    de snapshot, contrairement aux factures) ; un devis ancien réimprimé après
    changement de profil reflète donc les informations à jour.
+10. **Emails** : `EMAIL_FROM` doit être une adresse/domaine vérifié dans Brevo
+    (SPF/DKIM) sinon les messages seront rejetés ou classés en spam. Brevo
+    devient un sous-traitant RGPD (DPA à signer, mention dans la politique de
+    confidentialité). Une facture est « envoyée » dès son émission ; l'envoi
+    effectif par email est tracé dans `audit_logs`, sans preuve de réception.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations

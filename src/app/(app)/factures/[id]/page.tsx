@@ -10,6 +10,7 @@ import { LinesTable } from "@/components/LinesTable";
 import { ActionButton } from "@/components/ActionButton";
 import { deleteDraftInvoiceAction, emitInvoiceAction } from "../actions";
 import { PayForm } from "./PayForm";
+import { SendEmailForm } from "@/components/SendEmailForm";
 
 export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
   const { company } = await requireCompany();
@@ -28,6 +29,13 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   const discount = isDraft ? company.discountPolicyText : invoice.discountPolicyText;
   const franchise = seller.vatRegime === "FRANCHISE_EN_BASE";
   const status = displayInvoiceStatus(invoice);
+  const lastEmail = await prisma.auditLog.findFirst({
+    where: { companyId: company.id, entityId: invoice.id, action: "email.invoice_sent" },
+    orderBy: { createdAt: "desc" },
+  });
+  const lastSent = lastEmail
+    ? `Dernier envoi : le ${formatDate(lastEmail.createdAt)} à ${(lastEmail.metadata as { to?: string } | null)?.to ?? ""}`
+    : undefined;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -94,6 +102,9 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
               confirmMessage="Supprimer ce brouillon ?"
             />
           </div>
+        )}
+        {!isDraft && (
+          <SendEmailForm kind="INVOICE" documentId={invoice.id} defaultTo={invoice.client.email ?? ""} lastSent={lastSent} />
         )}
         {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID") && <PayForm invoiceId={invoice.id} />}
         <div className="flex gap-6">
