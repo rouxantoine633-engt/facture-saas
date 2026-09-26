@@ -477,7 +477,7 @@ model Reminder {
 
   createdAt DateTime @default(now())
 
-  @@index([invoiceId])
+  @@unique([invoiceId, offsetDays])
   @@index([status, scheduledFor])
   @@map("reminders")
 }

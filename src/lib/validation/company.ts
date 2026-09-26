@@ -52,7 +52,14 @@ export const companySchema = z
 
     defaultPaymentTermsDays: z.coerce.number().int().min(0).max(365),
     reminderOffsetsDays: z
-      .array(z.coerce.number().int().min(1))
+      .array(
+        z
+          .number()
+          .int()
+          .min(1, "Un délai de relance doit être d'au moins 1 jour")
+          .max(90, "Un délai de relance ne peut pas dépasser 90 jours")
+      )
+      .max(5, "5 relances au maximum")
       .default([7, 15]),
   })
   .superRefine((data, ctx) => {

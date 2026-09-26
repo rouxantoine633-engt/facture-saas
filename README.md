@@ -53,7 +53,11 @@ npm test
       Ce n'est PAS du PDF/A-3 ni du Factur-X (voir points de conformité)
 - [x] Envoi par email (Brevo, PDF en pièce jointe, expéditeur plateforme +
       reply-to de l'utilisateur, plafond 20/jour, journal d'audit)
-- [ ] Relances automatiques (cron) et passage en « En retard » en base
+- [x] Relances automatiques : tâche quotidienne `/api/cron/relances` (Vercel Cron,
+      protégée par `CRON_SECRET`) qui passe les factures échues en « En retard »
+      et envoie les relances aux paliers configurés (défaut J+7 / J+15), avec
+      plan pur testé (`src/lib/reminders.ts`), anti-doublon en base et reprise
+      des échecs
 - [ ] Avoirs (correction de facture émise)
 - [ ] Export comptable CSV/Excel
 
@@ -120,6 +124,12 @@ un expert-comptable et/ou un juriste avant mise en production :
     devient un sous-traitant RGPD (DPA à signer, mention dans la politique de
     confidentialité). Une facture est « envoyée » dès son émission ; l'envoi
     effectif par email est tracé dans `audit_logs`, sans preuve de réception.
+11. **Relances** : le texte des relances est un modèle générique. La 2e relance
+    rappelle pénalités et indemnité de 40 € (client professionnel seulement) ;
+    le montant des pénalités n'est pas calculé. Le ton et la valeur juridique
+    (mise en demeure = courrier recommandé) sont à valider. Si la tâche
+    quotidienne ne tourne pas un jour, seul le palier le plus récent est envoyé.
+    Prévoir une supervision de l'échec du cron.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations

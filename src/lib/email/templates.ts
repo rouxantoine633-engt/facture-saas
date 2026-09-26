@@ -56,3 +56,43 @@ export function buildDocumentEmail(i: DocumentEmailInput): BuiltEmail {
 
   return { subject, text, html };
 }
+
+export interface ReminderEmailInput {
+  companyName: string;
+  clientName: string;
+  number: string;
+  amountDueLabel: string;
+  dueDateLabel: string;
+  /** 2e relance ou plus : rappelle les pénalités et l'indemnité de recouvrement. */
+  firm: boolean;
+  /** L'indemnité de 40 € n'est due qu'entre professionnels. */
+  businessClient: boolean;
+  recoveryIndemnityLabel?: string;
+}
+
+export function buildReminderEmail(i: ReminderEmailInput): BuiltEmail {
+  const company = singleLine(i.companyName);
+  const subject = `${i.firm ? "Relance" : "Rappel"} : facture ${singleLine(i.number)} échue le ${i.dueDateLabel}`;
+
+  const paragraphs = [
+    `Bonjour ${singleLine(i.clientName)},`,
+    `Sauf erreur de notre part, la facture n° ${i.number}, d'un montant restant dû de ${i.amountDueLabel} TTC et échue le ${i.dueDateLabel}, n'a pas encore été réglée.`,
+  ];
+  if (i.firm) {
+    paragraphs.push(
+      i.businessClient && i.recoveryIndemnityLabel
+        ? `Conformément aux conditions de règlement mentionnées sur la facture, des pénalités de retard et une indemnité forfaitaire pour frais de recouvrement de ${i.recoveryIndemnityLabel} sont exigibles.`
+        : "Conformément aux conditions de règlement mentionnées sur la facture, des pénalités de retard sont exigibles."
+    );
+  }
+  paragraphs.push(
+    "La facture est jointe à cet email. Si le règlement a été effectué entre-temps, merci de ne pas tenir compte de ce message.",
+    `Cordialement,\n${company}`
+  );
+
+  return {
+    subject,
+    text: paragraphs.join("\n\n"),
+    html: paragraphs.map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`).join("\n"),
+  };
+}

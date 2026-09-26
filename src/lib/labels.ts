@@ -1,4 +1,5 @@
-import type { InvoiceStatus, QuoteStatus } from "@prisma/client";
+import type { InvoiceStatus, QuoteStatus, ReminderStatus } from "@prisma/client";
+import { isOverdue } from "./dates";
 
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   DRAFT: "Brouillon",
@@ -26,9 +27,16 @@ export function displayInvoiceStatus(
   now: Date = new Date()
 ): InvoiceStatus {
   const unpaid = invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID";
-  return unpaid && invoice.dueDate.getTime() < now.getTime() ? "OVERDUE" : invoice.status;
+  return unpaid && isOverdue(invoice.dueDate, now) ? "OVERDUE" : invoice.status;
 }
 
 export function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC" }).format(date);
 }
+
+export const REMINDER_STATUS_LABELS: Record<ReminderStatus, string> = {
+  PENDING: "en cours d'envoi",
+  SENT: "envoyée",
+  FAILED: "échec d'envoi, nouvelle tentative prévue",
+  CANCELLED: "non envoyée (dépassée par une relance plus récente)",
+};

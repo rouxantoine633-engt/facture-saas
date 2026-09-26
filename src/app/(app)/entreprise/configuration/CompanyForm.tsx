@@ -9,6 +9,7 @@ import {
   VAT_REGIME_LABELS,
   type CompanyInput,
 } from "@/lib/validation/company";
+import { parseOffsetsInput } from "@/lib/reminders";
 import { saveCompanyAction } from "./actions";
 
 const LEGAL_FORMS_WITH_RCS = new Set(["EURL", "SARL", "SASU", "SAS"]);
@@ -193,6 +194,22 @@ export function CompanyForm({
             className="input"
           />
         </Field>
+        <Field
+          label="Relances automatiques (jours après l'échéance, séparés par des virgules)"
+          error={errors.reminderOffsetsDays?.message ?? errors.reminderOffsetsDays?.root?.message}
+        >
+          <input
+            {...register("reminderOffsetsDays", {
+              setValueAs: (v) => (typeof v === "string" ? parseOffsetsInput(v) : v),
+            })}
+            className="input"
+            placeholder="7, 15"
+          />
+        </Field>
+        <p className="text-sm text-gray-600">
+          Laissez vide pour désactiver les relances. Le mail est envoyé au client
+          le matin du jour indiqué, tant que la facture n'est pas payée.
+        </p>
         <p className="text-sm text-gray-600">
           Les pénalités de retard et l'indemnité forfaitaire de recouvrement
           de 40 € seront ajoutées automatiquement sur chaque facture, comme

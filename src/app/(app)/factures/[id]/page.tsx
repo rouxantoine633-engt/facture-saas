@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
-import { displayInvoiceStatus, formatDate, INVOICE_STATUS_LABELS } from "@/lib/labels";
+import { displayInvoiceStatus, formatDate, INVOICE_STATUS_LABELS, REMINDER_STATUS_LABELS } from "@/lib/labels";
 import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/documents";
 import { vatMention, type BuyerSnapshot, type SellerSnapshot } from "@/lib/invoice-compliance";
 import { LinesTable } from "@/components/LinesTable";
@@ -29,6 +29,10 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
   const discount = isDraft ? company.discountPolicyText : invoice.discountPolicyText;
   const franchise = seller.vatRegime === "FRANCHISE_EN_BASE";
   const status = displayInvoiceStatus(invoice);
+  const reminders = await prisma.reminder.findMany({
+    where: { invoiceId: invoice.id },
+    orderBy: { offsetDays: "asc" },
+  });
   const lastEmail = await prisma.auditLog.findFirst({
     where: { companyId: company.id, entityId: invoice.id, action: "email.invoice_sent" },
     orderBy: { createdAt: "desc" },
@@ -106,7 +110,22 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
         {!isDraft && (
           <SendEmailForm kind="INVOICE" documentId={invoice.id} defaultTo={invoice.client.email ?? ""} lastSent={lastSent} />
         )}
-        {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID") && <PayForm invoiceId={invoice.id} />}
+        {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID" || invoice.status === "OVERDUE") && (
+          <PayForm invoiceId={invoice.id} />
+        )}
+        {reminders.length > 0 && (
+          <section aria-labelledby="relances" className="text-sm">
+            <h2 id="relances" className="mb-1 font-semibold">Relances</h2>
+            <ul className="list-disc pl-5 text-gray-700">
+              {reminders.map((r) => (
+                <li key={r.id}>
+                  J+{r.offsetDays} : {REMINDER_STATUS_LABELS[r.status]}
+                  {r.sentAt ? ` le ${formatDate(r.sentAt)}` : ""}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <div className="flex gap-6">
           <a href={`/factures/${invoice.id}/pdf`} className="text-brand-700 underline">
             Télécharger le PDF{isDraft ? " (brouillon)" : ""}

@@ -2,20 +2,21 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
+import { startOfUtcDay } from "@/lib/dates";
 
 export default async function DashboardPage() {
   const { company } = await requireCompany();
-  const now = new Date();
+  const today = startOfUtcDay(new Date());
 
   const [drafts, unpaid, overdue, paid] = await Promise.all([
     prisma.invoice.count({ where: { companyId: company.id, status: "DRAFT" } }),
     prisma.invoice.aggregate({
-      where: { companyId: company.id, status: { in: ["SENT", "PARTIALLY_PAID"] }, dueDate: { gte: now } },
+      where: { companyId: company.id, status: { in: ["SENT", "PARTIALLY_PAID"] }, dueDate: { gte: today } },
       _count: true,
       _sum: { totalTtcCents: true },
     }),
     prisma.invoice.aggregate({
-      where: { companyId: company.id, status: { in: ["SENT", "PARTIALLY_PAID"] }, dueDate: { lt: now } },
+      where: { companyId: company.id, status: { in: ["SENT", "PARTIALLY_PAID", "OVERDUE"] }, dueDate: { lt: today } },
       _count: true,
       _sum: { totalTtcCents: true },
     }),
