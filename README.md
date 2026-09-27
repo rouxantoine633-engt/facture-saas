@@ -100,6 +100,12 @@ local, avant et après la migration Next 16 :
   bouton d'émission désactivé au-delà.
 - **Paiement** : marquage du solde restant (après avoir) comme payé, la
   facture passe bien au statut « Payée ».
+- **Paiements partiels (2026-09-27, suite)** : deux paiements successifs
+  (50 € puis 70 € sur une facture de 120 €) — statut « Partiellement payée »
+  puis « Payée », historique affiché, solde recalculé et reprérempli à
+  chaque fois. Un montant dépassant le solde restant est rejeté côté serveur
+  avec un message clair. Le journal des ventes et celui des encaissements
+  reflètent correctement les deux paiements distincts.
 - **Export comptable** : contenu du CSV vérifié directement (pas seulement
   téléchargé) — BOM UTF-8 présent dans les octets réels, montants en
   virgule décimale, avoir exporté en négatif avec référence à la facture
@@ -146,7 +152,8 @@ npm test
 - [x] Interface : clients, devis (formulaire à lignes multiples avec totaux en
       direct, liste, détail), conversion en facture, factures (liste, détail
       avec mentions légales figées, émission, suppression de brouillon,
-      « marquer comme payée »), tableau de bord par statut
+      paiements partiels avec historique et solde restant), tableau de bord
+      par statut
 - [ ] Modification d'un devis brouillon, envoi/changement de statut d'un devis
 - [x] RGPD (`/compte`, `src/lib/gdpr/`) : export de portabilité en JSON (profil,
       entreprise, clients, devis, factures, avoirs) et fermeture de compte —
@@ -154,7 +161,6 @@ npm test
       (identité, coordonnées, mot de passe, journal d'audit) en conservant les
       factures/avoirs émis avec leurs mentions figées, comme l'exige leur
       conservation légale de 10 ans
-- [ ] Paiements partiels (le modèle les supporte, pas l'interface)
 - [x] Génération PDF (devis + factures, `src/lib/pdf/`) : données légales
       assemblées par des fonctions pures testées, rendu React-PDF, filigrane
       « BROUILLON », PDF d'une facture émise rendu depuis ses mentions figées.

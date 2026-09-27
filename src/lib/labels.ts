@@ -1,4 +1,4 @@
-import type { InvoiceStatus, QuoteStatus, ReminderStatus } from "@prisma/client";
+import type { InvoiceStatus, PaymentMethod, QuoteStatus, ReminderStatus } from "@prisma/client";
 import { isOverdue } from "./dates";
 
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
@@ -33,6 +33,15 @@ export function displayInvoiceStatus(
 export function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC" }).format(date);
 }
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  VIREMENT: "Virement",
+  CHEQUE: "Chèque",
+  ESPECES: "Espèces",
+  CARTE: "Carte bancaire",
+  PRELEVEMENT: "Prélèvement",
+  AUTRE: "Autre",
+};
 
 export const REMINDER_STATUS_LABELS: Record<ReminderStatus, string> = {
   PENDING: "en cours d'envoi",

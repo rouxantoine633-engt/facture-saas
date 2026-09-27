@@ -3,7 +3,14 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
-import { displayInvoiceStatus, formatDate, INVOICE_STATUS_LABELS, REMINDER_STATUS_LABELS } from "@/lib/labels";
+import {
+  displayInvoiceStatus,
+  formatDate,
+  INVOICE_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+  REMINDER_STATUS_LABELS,
+} from "@/lib/labels";
+import { amountStillDue } from "@/lib/credit-notes";
 import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/documents";
 import { vatMention, type BuyerSnapshot, type SellerSnapshot } from "@/lib/invoice-compliance";
 import { LinesTable } from "@/components/LinesTable";
@@ -21,6 +28,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       client: true,
       lines: { orderBy: { position: "asc" } },
       creditNotes: { orderBy: { createdAt: "asc" } },
+      payments: { orderBy: { paidAt: "asc" } },
     },
   });
   if (!invoice) notFound();
@@ -32,7 +40,10 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const latePenalty = isDraft ? company.latePenaltyRateText : invoice.latePenaltyRateText;
   const indemnity = isDraft ? company.recoveryIndemnityCents : invoice.recoveryIndemnityCents;
   const discount = isDraft ? company.discountPolicyText : invoice.discountPolicyText;
-  const creditable = invoice.totalTtcCents - invoice.creditNotes.reduce((sum, n) => sum + n.totalTtcCents, 0);
+  const creditedCents = invoice.creditNotes.reduce((sum, n) => sum + n.totalTtcCents, 0);
+  const paidCents = invoice.payments.reduce((sum, p) => sum + p.amountCents, 0);
+  const creditable = invoice.totalTtcCents - creditedCents;
+  const remainingCents = amountStillDue({ totalTtcCents: invoice.totalTtcCents, paidCents, creditedTtcCents: creditedCents });
   const franchise = seller.vatRegime === "FRANCHISE_EN_BASE";
   const status = displayInvoiceStatus(invoice);
   const reminders = await prisma.reminder.findMany({
@@ -136,9 +147,24 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         {!isDraft && (
           <SendEmailForm kind="INVOICE" documentId={invoice.id} defaultTo={invoice.client.email ?? ""} lastSent={lastSent} />
         )}
-        {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID" || invoice.status === "OVERDUE") && (
-          <PayForm invoiceId={invoice.id} />
+        {invoice.payments.length > 0 && (
+          <section aria-labelledby="paiements" className="text-sm">
+            <h2 id="paiements" className="mb-1 font-semibold">Paiements reçus</h2>
+            <ul className="list-disc pl-5 text-gray-700">
+              {invoice.payments.map((p) => (
+                <li key={p.id}>
+                  {formatDate(p.paidAt)} — {formatCentsToEuros(p.amountCents)} ({PAYMENT_METHOD_LABELS[p.method]}
+                  {p.reference ? `, réf. ${p.reference}` : ""})
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 font-medium">
+              {remainingCents > 0 ? `Reste dû : ${formatCentsToEuros(remainingCents)}` : "Solde intégralement réglé."}
+            </p>
+          </section>
         )}
+        {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID" || invoice.status === "OVERDUE") &&
+          remainingCents > 0 && <PayForm invoiceId={invoice.id} remainingCents={remainingCents} />}
         {reminders.length > 0 && (
           <section aria-labelledby="relances" className="text-sm">
             <h2 id="relances" className="mb-1 font-semibold">Relances</h2>

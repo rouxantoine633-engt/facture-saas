@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import type { Client, Company, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { computeLineTotals, summarizeDocument } from "@/lib/money";
+import { computeLineTotals, formatCentsToEuros, summarizeDocument } from "@/lib/money";
 import { allocateDocumentNumber } from "@/lib/numbering";
 import { amountStillDue, statusAfterCreditNote, validateCreditNote } from "@/lib/credit-notes";
 import {
@@ -263,12 +263,17 @@ export async function deleteDraftInvoice(params: { companyId: string; invoiceId:
   });
 }
 
-/** Enregistre le règlement du solde restant et passe la facture en « payée ». */
-export async function recordFullPayment(params: {
+/**
+ * Enregistre un paiement (total ou partiel). Passe la facture en « payée »
+ * si le solde restant tombe à zéro, sinon en « partiellement payée ».
+ */
+export async function recordPayment(params: {
   companyId: string;
   invoiceId: string;
+  amountCents: number;
   method: "VIREMENT" | "CHEQUE" | "ESPECES" | "CARTE" | "PRELEVEMENT" | "AUTRE";
   paidAt: Date;
+  reference?: string;
 }) {
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({
@@ -278,22 +283,39 @@ export async function recordFullPayment(params: {
     if (!invoice) throw new DocumentError("Facture introuvable.");
     if (invoice.status === "DRAFT") throw new DocumentError("Émettez d'abord la facture avant d'enregistrer un paiement.");
     if (invoice.status === "PAID") throw new DocumentError("Cette facture est déjà payée.");
-
     if (invoice.status === "CANCELLED_BY_CREDIT_NOTE") {
       throw new DocumentError("Cette facture a été annulée par un avoir.");
     }
+    if (!Number.isInteger(params.amountCents) || params.amountCents <= 0) {
+      throw new DocumentError("Le montant du paiement doit être supérieur à 0.");
+    }
+
+    const alreadyPaid = invoice.payments.reduce((sum, p) => sum + p.amountCents, 0);
     const credits = await tx.creditNote.aggregate({ where: { invoiceId: invoice.id }, _sum: { totalTtcCents: true } });
-    const remaining = amountStillDue({
-      totalTtcCents: invoice.totalTtcCents,
-      paidCents: invoice.payments.reduce((sum, p) => sum + p.amountCents, 0),
-      creditedTtcCents: credits._sum.totalTtcCents ?? 0,
-    });
+    const creditedCents = credits._sum.totalTtcCents ?? 0;
+    const remaining = amountStillDue({ totalTtcCents: invoice.totalTtcCents, paidCents: alreadyPaid, creditedTtcCents: creditedCents });
     if (remaining <= 0) throw new DocumentError("Il ne reste rien à payer sur cette facture.");
+    if (params.amountCents > remaining) {
+      throw new DocumentError(
+        `Le montant saisi (${formatCentsToEuros(params.amountCents)}) dépasse le solde restant dû (${formatCentsToEuros(remaining)}).`
+      );
+    }
 
     await tx.payment.create({
-      data: { invoiceId: invoice.id, amountCents: remaining, paidAt: params.paidAt, method: params.method },
+      data: {
+        invoiceId: invoice.id,
+        amountCents: params.amountCents,
+        paidAt: params.paidAt,
+        method: params.method,
+        reference: params.reference || null,
+      },
     });
-    await tx.invoice.update({ where: { id: invoice.id }, data: { status: "PAID" } });
+
+    const stillDueAfter = remaining - params.amountCents;
+    await tx.invoice.update({
+      where: { id: invoice.id },
+      data: { status: stillDueAfter <= 0 ? "PAID" : "PARTIALLY_PAID" },
+    });
   });
 }
 

@@ -1,16 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { INVOICE_STATUS_LABELS } from "@/lib/labels";
+import { INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import type { BuyerSnapshot } from "@/lib/invoice-compliance";
 import { buildPaymentsJournal, buildSalesJournal, type SalesDocument } from "./accounting";
-
-const METHOD_LABELS: Record<string, string> = {
-  VIREMENT: "Virement",
-  CHEQUE: "Chèque",
-  ESPECES: "Espèces",
-  CARTE: "Carte bancaire",
-  PRELEVEMENT: "Prélèvement",
-  AUTRE: "Autre",
-};
 
 const toComputedLines = <T extends { lineHtCents: number; lineVatCents: number; lineTtcCents: number; vatRatePer100000: number }>(
   lines: T[]
@@ -79,7 +70,7 @@ export async function loadPaymentsJournal(companyId: string, from: Date, to: Dat
       invoiceNumber: p.invoice.number,
       clientName: (p.invoice.buyerLegalSnapshot as unknown as BuyerSnapshot).name,
       amountCents: p.amountCents,
-      methodLabel: METHOD_LABELS[p.method] ?? p.method,
+      methodLabel: PAYMENT_METHOD_LABELS[p.method],
       reference: p.reference,
     }))
   );

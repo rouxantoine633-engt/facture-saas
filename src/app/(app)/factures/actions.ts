@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { deleteDraftInvoice, DocumentError, emitInvoice, recordFullPayment } from "@/lib/documents";
+import { deleteDraftInvoice, DocumentError, emitInvoice, recordPayment } from "@/lib/documents";
 import { requireCompany } from "@/lib/session";
+import { parseDecimalToScaledBigInt, MoneyError } from "@/lib/money";
 
 export interface ActionResult {
   error?: string;
@@ -41,21 +42,47 @@ export async function deleteDraftInvoiceAction(invoiceId: string): Promise<Actio
   redirect("/factures");
 }
 
-export async function markPaidAction(invoiceId: string, method: string): Promise<ActionResult> {
+const PAYMENT_METHODS = ["VIREMENT", "CHEQUE", "ESPECES", "CARTE", "PRELEVEMENT", "AUTRE"] as const;
+
+export interface RecordPaymentInput {
+  invoiceId: string;
+  amount: string; // saisie utilisateur en euros, ex "125,50"
+  method: string;
+  paidAt: string; // yyyy-mm-dd
+  reference?: string;
+}
+
+export async function recordPaymentAction(input: RecordPaymentInput): Promise<ActionResult> {
   const { company } = await requireCompany();
-  const allowed = ["VIREMENT", "CHEQUE", "ESPECES", "CARTE", "PRELEVEMENT", "AUTRE"] as const;
-  if (!allowed.includes(method as (typeof allowed)[number])) return { error: "Moyen de paiement invalide." };
+
+  if (!PAYMENT_METHODS.includes(input.method as (typeof PAYMENT_METHODS)[number])) {
+    return { error: "Moyen de paiement invalide." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.paidAt)) {
+    return { error: "Date de paiement invalide." };
+  }
+
+  let amountCents: number;
+  try {
+    const cents = parseDecimalToScaledBigInt(input.amount.replace(",", ".").trim(), 2);
+    if (cents <= 0n) return { error: "Le montant du paiement doit être supérieur à 0." };
+    amountCents = Number(cents);
+  } catch (e) {
+    return { error: e instanceof MoneyError ? e.message : "Montant invalide." };
+  }
 
   const result = await run(() =>
-    recordFullPayment({
+    recordPayment({
       companyId: company.id,
-      invoiceId,
-      method: method as (typeof allowed)[number],
-      paidAt: new Date(),
+      invoiceId: input.invoiceId,
+      amountCents,
+      method: input.method as (typeof PAYMENT_METHODS)[number],
+      paidAt: new Date(`${input.paidAt}T00:00:00.000Z`),
+      reference: input.reference?.trim() || undefined,
     })
   );
   if (result.error) return result;
   revalidatePath("/factures");
-  revalidatePath(`/factures/${invoiceId}`);
+  revalidatePath(`/factures/${input.invoiceId}`);
   return {};
 }
