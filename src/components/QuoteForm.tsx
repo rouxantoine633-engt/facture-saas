@@ -9,7 +9,6 @@ import {
   FRENCH_VAT_RATES,
   type ComputedLine,
 } from "@/lib/money";
-import { createQuoteAction } from "../actions";
 
 interface ClientOption {
   id: string;
@@ -21,6 +20,22 @@ interface LineState {
   quantity: string;
   unitPrice: string; // euros, saisie utilisateur
   vatRatePer100000: number;
+}
+
+export interface QuoteFormPayload {
+  clientId: string;
+  issueDate: string;
+  validUntil: string;
+  notes: string;
+  lines: Array<{ description: string; quantity: string; unitPriceCents: number; vatRatePer100000: number }>;
+}
+
+export interface QuoteFormInitial {
+  clientId: string;
+  issueDate: string;
+  validUntil: string;
+  notes: string;
+  lines: LineState[];
 }
 
 const VAT_OPTIONS = [
@@ -50,18 +65,26 @@ const emptyLine = (vat: number): LineState => ({
 export function QuoteForm({
   clients,
   franchiseEnBase,
+  initial,
+  submitAction,
+  submitLabel,
+  pendingLabel,
 }: {
   clients: ClientOption[];
   franchiseEnBase: boolean;
+  initial?: QuoteFormInitial;
+  submitAction: (payload: QuoteFormPayload) => Promise<{ error?: string } | void>;
+  submitLabel: string;
+  pendingLabel: string;
 }) {
   const defaultVat = franchiseEnBase ? FRENCH_VAT_RATES.EXONERE : FRENCH_VAT_RATES.NORMAL;
   const today = new Date().toISOString().slice(0, 10);
 
-  const [clientId, setClientId] = useState("");
-  const [issueDate, setIssueDate] = useState(today);
-  const [validUntil, setValidUntil] = useState("");
-  const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<LineState[]>([emptyLine(defaultVat)]);
+  const [clientId, setClientId] = useState(initial?.clientId ?? "");
+  const [issueDate, setIssueDate] = useState(initial?.issueDate ?? today);
+  const [validUntil, setValidUntil] = useState(initial?.validUntil ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [lines, setLines] = useState<LineState[]>(initial?.lines ?? [emptyLine(defaultVat)]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -107,13 +130,7 @@ export function QuoteForm({
     }
 
     setPending(true);
-    const result = await createQuoteAction({
-      clientId,
-      issueDate,
-      validUntil,
-      notes,
-      lines: payloadLines,
-    });
+    const result = await submitAction({ clientId, issueDate, validUntil, notes, lines: payloadLines });
     // En cas de succès, l'action redirige : on n'arrive ici qu'en cas d'erreur.
     setPending(false);
     if (result?.error) setError(result.error);
@@ -251,7 +268,7 @@ export function QuoteForm({
         disabled={pending}
         className="rounded-md bg-brand-600 px-6 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
-        {pending ? "Création…" : "Créer le devis"}
+        {pending ? pendingLabel : submitLabel}
       </button>
     </form>
   );

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireCompany } from "@/lib/session";
-import { QuoteForm } from "./QuoteForm";
+import { QuoteForm } from "@/components/QuoteForm";
+import { createQuoteAction } from "../actions";
 
 export default async function NewQuotePage() {
   const { company } = await requireCompany();
@@ -23,7 +24,13 @@ export default async function NewQuotePage() {
           .
         </p>
       ) : (
-        <QuoteForm clients={clients} franchiseEnBase={company.vatRegime === "FRANCHISE_EN_BASE"} />
+        <QuoteForm
+          clients={clients}
+          franchiseEnBase={company.vatRegime === "FRANCHISE_EN_BASE"}
+          submitAction={createQuoteAction}
+          submitLabel="Créer le devis"
+          pendingLabel="Création…"
+        />
       )}
     </div>
   );

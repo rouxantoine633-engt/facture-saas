@@ -114,6 +114,47 @@ export async function createQuote(params: {
   });
 }
 
+/**
+ * Modifie un devis, uniquement tant qu'il est encore brouillon. Une fois
+ * envoyé, accepté ou converti, il ne peut plus être modifié directement
+ * (cohérent avec la trace qu'en garde le client) — il faut en créer un nouveau.
+ */
+export async function updateQuote(params: {
+  companyId: string;
+  quoteId: string;
+  clientId: string;
+  issueDate: Date;
+  validUntil?: Date;
+  notes?: string;
+  lines: LineDraft[];
+}) {
+  const { lines, totals } = computeDocumentLines(params.lines);
+  return prisma.$transaction(async (tx) => {
+    const quote = await tx.quote.findFirst({ where: { id: params.quoteId, companyId: params.companyId } });
+    if (!quote) throw new DocumentError("Devis introuvable.");
+    if (quote.status !== "DRAFT") {
+      throw new DocumentError("Ce devis n'est plus un brouillon et ne peut plus être modifié.");
+    }
+    const client = await tx.client.findFirst({ where: { id: params.clientId, companyId: params.companyId } });
+    if (!client) throw new DocumentError("Client introuvable.");
+
+    await tx.quoteLine.deleteMany({ where: { quoteId: quote.id } });
+    return tx.quote.update({
+      where: { id: quote.id },
+      data: {
+        clientId: params.clientId,
+        issueDate: params.issueDate,
+        validUntil: params.validUntil ?? null,
+        notes: params.notes ?? null,
+        subtotalHtCents: totals.subtotalHtCents,
+        totalVatCents: totals.totalVatCents,
+        totalTtcCents: totals.totalTtcCents,
+        lines: { create: lines },
+      },
+    });
+  });
+}
+
 /** Crée une facture BROUILLON à partir d'un devis et verrouille le devis. */
 export async function convertQuoteToInvoice(params: { companyId: string; quoteId: string }) {
   return prisma.$transaction(async (tx) => {

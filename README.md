@@ -106,6 +106,11 @@ local, avant et après la migration Next 16 :
   chaque fois. Un montant dépassant le solde restant est rejeté côté serveur
   avec un message clair. Le journal des ventes et celui des encaissements
   reflètent correctement les deux paiements distincts.
+- **Modification d'un devis brouillon (2026-09-27, suite)** : devis créé,
+  ligne modifiée et ligne ajoutée, totaux recalculés (345,50 €), numéro
+  conservé. Une fois converti en facture, l'accès direct à l'URL de
+  modification affiche bien « n'est plus un brouillon » au lieu du
+  formulaire.
 - **Export comptable** : contenu du CSV vérifié directement (pas seulement
   téléchargé) — BOM UTF-8 présent dans les octets réels, montants en
   virgule décimale, avoir exporté en négatif avec référence à la facture
@@ -154,7 +159,12 @@ npm test
       avec mentions légales figées, émission, suppression de brouillon,
       paiements partiels avec historique et solde restant), tableau de bord
       par statut
-- [ ] Modification d'un devis brouillon, envoi/changement de statut d'un devis
+- [x] Modification d'un devis brouillon (`/devis/[id]/modifier`, `QuoteForm`
+      partagé avec la création) : bloquée dès que le devis n'est plus un
+      brouillon, aussi bien côté page que côté service (`updateQuote`)
+- [ ] Changement manuel de statut d'un devis (accepté/refusé/expiré) — pour
+      l'instant seul l'envoi par email (→ Envoyé) et la conversion (→
+      Converti) changent le statut automatiquement
 - [x] RGPD (`/compte`, `src/lib/gdpr/`) : export de portabilité en JSON (profil,
       entreprise, clients, devis, factures, avoirs) et fermeture de compte —
       suppression totale si rien n'a jamais été émis, sinon anonymisation

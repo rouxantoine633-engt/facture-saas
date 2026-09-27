@@ -58,6 +58,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <div className="mt-8 flex items-start gap-6">
+        {quote.status === "DRAFT" && (
+          <Link href={`/devis/${quote.id}/modifier`} className="text-brand-700 underline">
+            Modifier le devis
+          </Link>
+        )}
         {canConvert && (
           <ActionButton
             action={convert}
