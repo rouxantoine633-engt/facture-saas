@@ -4,7 +4,7 @@
     {
       "name": "web",
       "runtimeExecutable": "/Users/antoineroux/.local/node-v20.18.0/bin/node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--webpack"],
       "port": 3000
     }
   ]

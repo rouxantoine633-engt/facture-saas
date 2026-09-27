@@ -7,10 +7,11 @@ import type { BuyerSnapshot, SellerSnapshot } from "@/lib/invoice-compliance";
 import { LinesTable } from "@/components/LinesTable";
 import { SendEmailForm } from "@/components/SendEmailForm";
 
-export default async function CreditNoteDetailPage({ params }: { params: { id: string } }) {
+export default async function CreditNoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { company } = await requireCompany();
   const note = await prisma.creditNote.findFirst({
-    where: { id: params.id, companyId: company.id },
+    where: { id: id, companyId: company.id },
     include: { client: true, invoice: true, lines: { orderBy: { position: "asc" } } },
   });
   if (!note) notFound();

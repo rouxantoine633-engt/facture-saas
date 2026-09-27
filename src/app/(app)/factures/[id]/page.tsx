@@ -12,10 +12,11 @@ import { deleteDraftInvoiceAction, emitInvoiceAction } from "../actions";
 import { PayForm } from "./PayForm";
 import { SendEmailForm } from "@/components/SendEmailForm";
 
-export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { company } = await requireCompany();
   const invoice = await prisma.invoice.findFirst({
-    where: { id: params.id, companyId: company.id },
+    where: { id: id, companyId: company.id },
     include: {
       client: true,
       lines: { orderBy: { position: "asc" } },

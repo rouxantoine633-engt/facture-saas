@@ -2,7 +2,7 @@
 
 ## Stack
 
-- **Next.js 14** (App Router, TypeScript) — frontend + backend unifiés
+- **Next.js 16** (App Router, TypeScript, React 19) — frontend + backend unifiés
 - **PostgreSQL + Prisma** — base de données
 - **Auth.js (NextAuth v5)** — email/mot de passe + OAuth Google
 - **@react-pdf/renderer** — génération PDF côté serveur
@@ -21,13 +21,50 @@ occasion : `useSearchParams()` sur `/connexion` nécessitait une limite
 - **Corrigé** : `next-auth` était vulnérable à un contournement d'email par
   homoglyphes Unicode (critique) — mis à jour vers `5.0.0-beta.32`. `next` mis
   à jour vers `14.2.35` (dernier correctif sans changement de version majeure).
-- **Non corrigé** : plusieurs failles côté Next.js (dont des DoS et, pour les
-  plus récentes, des RCE potentielles) ne sont couvertes que par un passage à
-  Next 16, changement majeur non tenté ici faute de pouvoir le tester
-  correctement dans le temps imparti — à traiter comme une tâche dédiée avant
-  mise en production. Egalement non corrigées (dev uniquement, sans exposition
-  en production) : des vulnérabilités modérées dans `vitest`/`esbuild`/`glob`,
-  qui imposeraient de casser la version de `vitest` ou d'`eslint-config-next`.
+- **Corrigé (2026-09-27, suite)** : passage à **Next.js 16** + **React 19** +
+  **ESLint 9** (voir section suivante) — toutes les failles Next.js listées
+  ci-dessus (DoS, RCE potentielles) sont couvertes par cette version.
+- **Non corrigé, dev uniquement, sans exposition en production** : des
+  vulnérabilités modérées/critique dans `vitest`/`esbuild`/`vite` (le test
+  runner), qui imposeraient de casser la version majeure de `vitest` (2.x → 4.x).
+
+## Migration Next.js 14 → 16 (2026-09-27)
+
+Faite pour corriger les failles de sécurité ci-dessus. Points bloquants
+rencontrés et résolus :
+
+- **`params` asynchrone** : Next 15+ impose `params: Promise<{ id: string }>`
+  (et `await params`) dans les pages et route handlers dynamiques — corrigé
+  dans les 7 fichiers `[id]/...` concernés (devis, factures, avoirs).
+- **`next.config.mjs`** : `experimental.serverComponentsExternalPackages` a
+  été renommé `serverExternalPackages` (option top-level).
+- **ESLint 9** : `eslint-config-next@16` exige `eslint >= 9` ; aucun fichier
+  de config ESLint n'existait dans le projet, donc aucune migration de règles
+  n'a été nécessaire.
+- **Turbopack (mode dev) indisponible sur cette machine** : `next dev` utilise
+  Turbopack par défaut depuis Next 16, qui plante au démarrage ici
+  (`spawning node pooled process — No such file or directory`), probablement
+  à cause de l'installation Node non standard (voir plus haut, pas de
+  Homebrew). `npm run dev` et `.claude/launch.json` utilisent donc
+  `next dev --webpack`. **`next build` utilise Turbopack sans problème** : la
+  build de production n'est pas concernée par ce contournement.
+- **Génération PDF cassée par un conflit de versions React (bug réel, corrigé)** :
+  après la migration, `/factures/[id]/pdf` (et devis/avoirs) renvoyaient une
+  erreur 500 (« Minified React error #31 »). Cause : Next 16 utilise React 19
+  en interne pour son runtime serveur, alors que le projet était resté en
+  React 18 — `@react-pdf/renderer` (chargé hors bundle via
+  `serverExternalPackages`) se retrouvait avec deux instances de React
+  différentes dans le même rendu. Confirmé comme un problème connu de
+  l'écosystème (voir [react-pdf#3074](https://github.com/diegomura/react-pdf/issues/3074)).
+  **Corrigé** en alignant tout le monde sur React 19 : `react`/`react-dom`
+  19.3.0, `@react-pdf/renderer` 3.4.5 → **4.9.0** (première version à déclarer
+  officiellement React 19 en peer dependency).
+
+Vérifié après migration : `npm test` (110 tests), `npx tsc --noEmit`,
+`npm run build` (Turbopack), puis en conditions réelles dans le navigateur
+(serveur `--webpack`) — page facture dynamique, les 3 routes PDF
+(devis/facture/avoir), et création d'un devis via un formulaire React Hook
+Form. Tout fonctionne.
 
 ## Vérification contre une vraie base (2026-09-27)
 
@@ -40,6 +77,39 @@ d'une facture après émission, blocage de sa modification et de sa
 suppression par les triggers SQL. Tout est passé au premier essai. Ce script
 crée des données de test dans la base ; à ne lancer que sur une base de
 développement.
+
+## Vérification dans le navigateur (2026-09-27)
+
+Parcours complet testé pour de vrai avec le serveur de dev et PostgreSQL
+local, avant et après la migration Next 16 :
+
+- **Inscription / connexion** : compte créé, mot de passe haché en base,
+  connexion réussie avec redirection vers la configuration entreprise
+  (aucun profil n'existe encore), message d'erreur générique sur mot de
+  passe incorrect (pas de fuite d'info).
+- **Devis → facture** : profil entreprise, client, devis à lignes multiples
+  avec totaux calculés en direct, conversion en facture brouillon (référence
+  au devis d'origine correcte), émission (numéro définitif, toutes les
+  mentions légales affichées), PDF téléchargé sans erreur pour les trois
+  types de documents.
+- **Immutabilité** : `UPDATE`/`DELETE` en SQL brut directement contre la
+  facture émise, tous deux rejetés par les triggers PostgreSQL — la
+  protection tient même en contournant complètement l'application.
+- **Avoir** : avoir partiel créé sur la facture émise (numérotation propre
+  `AV-...`), plafond du montant créditable correctement appliqué et affiché,
+  bouton d'émission désactivé au-delà.
+- **Paiement** : marquage du solde restant (après avoir) comme payé, la
+  facture passe bien au statut « Payée ».
+- **Export comptable** : contenu du CSV vérifié directement (pas seulement
+  téléchargé) — BOM UTF-8 présent dans les octets réels, montants en
+  virgule décimale, avoir exporté en négatif avec référence à la facture
+  rectifiée, journal des encaissements correct.
+- **Email** : sans `BREVO_API_KEY`, message d'erreur clair affiché (« pas
+  encore configuré »). Avec une fausse clé, la requête atteint réellement
+  l'API Brevo (401 « Key not found » dans les logs serveur) et l'erreur est
+  gérée proprement côté UI — confirme que tout le code (PDF, pièce jointe,
+  appel réseau, gestion d'erreur) fonctionne ; seule la délivrance réelle
+  reste à vérifier avec une vraie clé Brevo.
 
 ## Démarrage
 

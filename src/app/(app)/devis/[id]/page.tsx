@@ -8,10 +8,11 @@ import { ActionButton } from "@/components/ActionButton";
 import { convertQuoteAction } from "../actions";
 import { SendEmailForm } from "@/components/SendEmailForm";
 
-export default async function QuoteDetailPage({ params }: { params: { id: string } }) {
+export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { company } = await requireCompany();
   const quote = await prisma.quote.findFirst({
-    where: { id: params.id, companyId: company.id },
+    where: { id: id, companyId: company.id },
     include: { client: true, lines: { orderBy: { position: "asc" } } },
   });
   if (!quote) notFound();
