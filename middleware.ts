@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/connexion", "/inscription"];
+const PUBLIC_PATHS = ["/connexion", "/inscription", "/compte/supprime"];
 
 export default auth((req) => {
   const isPublic = PUBLIC_PATHS.some((path) =>

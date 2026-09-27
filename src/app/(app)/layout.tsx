@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/clients", label: "Clients" },
   { href: "/export", label: "Export comptable" },
   { href: "/entreprise/configuration", label: "Mon entreprise" },
+  { href: "/compte", label: "Mes données" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

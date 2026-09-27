@@ -46,6 +46,12 @@ npm test
       avec mentions légales figées, émission, suppression de brouillon,
       « marquer comme payée »), tableau de bord par statut
 - [ ] Modification d'un devis brouillon, envoi/changement de statut d'un devis
+- [x] RGPD (`/compte`, `src/lib/gdpr/`) : export de portabilité en JSON (profil,
+      entreprise, clients, devis, factures, avoirs) et fermeture de compte —
+      suppression totale si rien n'a jamais été émis, sinon anonymisation
+      (identité, coordonnées, mot de passe, journal d'audit) en conservant les
+      factures/avoirs émis avec leurs mentions figées, comme l'exige leur
+      conservation légale de 10 ans
 - [ ] Paiements partiels (le modèle les supporte, pas l'interface)
 - [x] Génération PDF (devis + factures, `src/lib/pdf/`) : données légales
       assemblées par des fonctions pures testées, rendu React-PDF, filigrane
@@ -108,16 +114,15 @@ un expert-comptable et/ou un juriste avant mise en production :
 4. **Taux des pénalités de retard** : le texte par défaut référence le taux
    BCE + 10 points, qui évolue — nécessite une maintenance humaine
    périodique, pas une conformité automatique perpétuelle.
-5. **RGPD global** : le logiciel fournira les fonctionnalités techniques
-   (export, suppression de compte), mais la conformité RGPD complète (base
-   légale du traitement, registre des traitements, DPA avec les
+5. **RGPD global** : l'export de portabilité et la fermeture de compte sont
+   implémentés (points 14-15 ci-dessous), mais la conformité RGPD complète
+   (base légale du traitement, registre des traitements, DPA avec les
    sous-traitants email/hébergement) reste une responsabilité juridique de
    l'éditeur du SaaS, pas uniquement une fonctionnalité logicielle.
-7. **Suppression de compte vs conservation légale** : les factures doivent
-   être conservées 10 ans (Code de commerce), ce qui entre en tension avec le
-   droit à l'effacement RGPD. Les triggers bloquent la suppression des
-   factures émises : la suppression de compte devra anonymiser/archiver
-   plutôt que supprimer. Arbitrage à valider par un juriste.
+7. **Suppression de compte vs conservation légale** : résolu par
+   anonymisation plutôt que suppression dès qu'une facture ou un avoir a été
+   émis (voir point 14) — arbitrage technique qui reste à faire valider par
+   un juriste.
 8. **PDF non archivé** : le PDF d'une facture émise est régénéré à la demande
    depuis les données figées (rendu déterministe), mais aucun fichier n'est
    conservé (`pdfStorageKey` inutilisé). Si l'archivage à valeur probante d'un
@@ -148,6 +153,17 @@ un expert-comptable et/ou un juriste avant mise en production :
     obligatoire en cas de contrôle fiscal pour une comptabilité informatisée :
     à confirmer avec l'expert-comptable (format attendu, comptes, journaux).
     L'export est une aide, pas une pièce comptable certifiée.
+14. **RGPD — périmètre de l'anonymisation** : elle couvre profil, entreprise et
+    clients. Les paiements (`Payment.reference` peut contenir un numéro de
+    chèque) et les avoirs (motif en texte libre) sont conservés tels quels au
+    titre des 10 ans, sans passage systématique dessus. Aucun délai de grâce
+    ni sauvegarde de secours n'est purgé (hors périmètre technique de ce
+    service). Ce mécanisme n'a pas été exécuté ni vérifié faute de Node
+    installé sur la machine de développement.
+15. **RGPD — reste à faire hors code** : politique de confidentialité, base
+    légale de traitement par finalité, registre des traitements, DPA avec
+    Brevo (et l'hébergeur base de données), et procédure documentée pour une
+    demande d'accès/rectification reçue autrement que via `/compte`.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations
