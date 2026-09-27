@@ -116,7 +116,7 @@ describe("buildSalesJournal", () => {
 
   it("neutralise un nom de client malveillant", () => {
     const [header, row] = buildSalesJournal([{ ...invoice, clientName: "=cmd|' /C calc'!A0" }]);
-    expect(row![header!.indexOf("Client")].startsWith("'=")).toBe(true);
+    expect(row![header!.indexOf("Client")]!.startsWith("'=")).toBe(true);
   });
 });
 

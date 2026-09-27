@@ -9,6 +9,26 @@
 - **Vitest** — tests unitaires (priorité absolue : calculs financiers)
 - **Tailwind CSS** — UI, accessibilité WCAG AA
 
+## État de la vérification (première exécution réelle)
+
+Le 2026-09-27, Node a été installé et le projet exécuté pour la première fois :
+`npm install`, `npm test` (110 tests, tous passants), `npx tsc --noEmit` et
+`npm run build` passent tous sans erreur. Un bug réel a été corrigé à cette
+occasion : `useSearchParams()` sur `/connexion` nécessitait une limite
+`Suspense` pour le pré-rendu Next.js.
+
+`npm audit` signale des vulnérabilités connues sur les dépendances :
+- **Corrigé** : `next-auth` était vulnérable à un contournement d'email par
+  homoglyphes Unicode (critique) — mis à jour vers `5.0.0-beta.32`. `next` mis
+  à jour vers `14.2.35` (dernier correctif sans changement de version majeure).
+- **Non corrigé** : plusieurs failles côté Next.js (dont des DoS et, pour les
+  plus récentes, des RCE potentielles) ne sont couvertes que par un passage à
+  Next 16, changement majeur non tenté ici faute de pouvoir le tester
+  correctement dans le temps imparti — à traiter comme une tâche dédiée avant
+  mise en production. Egalement non corrigées (dev uniquement, sans exposition
+  en production) : des vulnérabilités modérées dans `vitest`/`esbuild`/`glob`,
+  qui imposeraient de casser la version de `vitest` ou d'`eslint-config-next`.
+
 ## Démarrage
 
 Prérequis : Node.js 20+, une base PostgreSQL (locale ou hébergée type Neon/Supabase).
