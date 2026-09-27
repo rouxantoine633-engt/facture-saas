@@ -29,6 +29,18 @@ occasion : `useSearchParams()` sur `/connexion` nécessitait une limite
   en production) : des vulnérabilités modérées dans `vitest`/`esbuild`/`glob`,
   qui imposeraient de casser la version de `vitest` ou d'`eslint-config-next`.
 
+## Vérification contre une vraie base (2026-09-27)
+
+La migration Prisma a été exécutée pour de vrai contre un PostgreSQL 17 local
+(`npx prisma migrate dev --name init`, dossier `prisma/migrations/`), suivie
+de l'application des triggers d'immutabilité (`prisma/sql/immutability.sql`).
+Un script de contrôle (`npm run smoke`, `scripts/smoke-test.mjs`) vérifie
+contre la vraie base : numérotation séquentielle sans trou, verrouillage
+d'une facture après émission, blocage de sa modification et de sa
+suppression par les triggers SQL. Tout est passé au premier essai. Ce script
+crée des données de test dans la base ; à ne lancer que sur une base de
+développement.
+
 ## Démarrage
 
 Prérequis : Node.js 20+, une base PostgreSQL (locale ou hébergée type Neon/Supabase).
