@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { convertQuoteToInvoice, createQuote, DocumentError, updateQuote } from "@/lib/documents";
+import type { QuoteStatus } from "@prisma/client";
+import { convertQuoteToInvoice, createQuote, DocumentError, updateQuote, updateQuoteStatus } from "@/lib/documents";
 import { requireCompany } from "@/lib/session";
+import { MANUAL_QUOTE_STATUSES } from "@/lib/quote-status";
 import { quoteSchema, type QuoteInput } from "@/lib/validation/document";
 
 export interface ActionResult {
@@ -77,6 +79,25 @@ export async function updateQuoteAction(quoteId: string, input: QuoteInput): Pro
   revalidatePath("/devis");
   revalidatePath(`/devis/${quoteId}`);
   redirect(`/devis/${quoteId}`);
+}
+
+export async function updateQuoteStatusAction(quoteId: string, status: string): Promise<ActionResult> {
+  const { company } = await requireCompany();
+
+  if (!MANUAL_QUOTE_STATUSES.includes(status as QuoteStatus)) {
+    return { error: "Statut invalide." };
+  }
+
+  try {
+    await updateQuoteStatus({ companyId: company.id, quoteId, status: status as QuoteStatus });
+  } catch (e) {
+    if (e instanceof DocumentError) return { error: e.message };
+    throw e;
+  }
+
+  revalidatePath("/devis");
+  revalidatePath(`/devis/${quoteId}`);
+  return {};
 }
 
 export async function convertQuoteAction(quoteId: string): Promise<ActionResult> {

@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
-import type { Client, Company, Prisma } from "@prisma/client";
+import type { Client, Company, Prisma, QuoteStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { computeLineTotals, formatCentsToEuros, summarizeDocument } from "@/lib/money";
 import { allocateDocumentNumber } from "@/lib/numbering";
 import { amountStillDue, statusAfterCreditNote, validateCreditNote } from "@/lib/credit-notes";
+import { canSetQuoteStatus } from "@/lib/quote-status";
 import {
   validateInvoiceForEmission,
   type BuyerSnapshot,
@@ -119,6 +120,20 @@ export async function createQuote(params: {
  * envoyé, accepté ou converti, il ne peut plus être modifié directement
  * (cohérent avec la trace qu'en garde le client) — il faut en créer un nouveau.
  */
+/** Change manuellement le statut d'un devis (envoyé/accepté/refusé/expiré). */
+export async function updateQuoteStatus(params: { companyId: string; quoteId: string; status: QuoteStatus }) {
+  const quote = await prisma.quote.findFirst({ where: { id: params.quoteId, companyId: params.companyId } });
+  if (!quote) throw new DocumentError("Devis introuvable.");
+  if (!canSetQuoteStatus(quote.status, params.status)) {
+    throw new DocumentError(
+      quote.status === "CONVERTED"
+        ? "Ce devis a été converti en facture : son statut ne peut plus être modifié."
+        : "Statut invalide."
+    );
+  }
+  return prisma.quote.update({ where: { id: quote.id }, data: { status: params.status } });
+}
+
 export async function updateQuote(params: {
   companyId: string;
   quoteId: string;

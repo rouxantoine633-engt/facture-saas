@@ -7,6 +7,7 @@ import { LinesTable } from "@/components/LinesTable";
 import { ActionButton } from "@/components/ActionButton";
 import { convertQuoteAction } from "../actions";
 import { SendEmailForm } from "@/components/SendEmailForm";
+import { QuoteStatusForm } from "./QuoteStatusForm";
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,6 +57,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       <div className="mt-8">
         <SendEmailForm kind="QUOTE" documentId={quote.id} defaultTo={quote.client.email ?? ""} lastSent={lastSent} />
       </div>
+
+      {quote.status !== "CONVERTED" && (
+        <div className="mt-8">
+          <QuoteStatusForm quoteId={quote.id} currentStatus={quote.status} />
+        </div>
+      )}
 
       <div className="mt-8 flex items-start gap-6">
         {quote.status === "DRAFT" && (
