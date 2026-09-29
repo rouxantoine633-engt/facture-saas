@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { previewAccountDeletion } from "@/lib/gdpr/account";
 import { DeleteAccountForm } from "./DeleteAccountForm";
+import { SubscribeButton } from "@/components/SubscribeButton";
 
 export default async function AccountPage() {
   const session = await auth();
@@ -17,6 +18,16 @@ export default async function AccountPage() {
       <p className="mb-6 text-gray-600">
         Conformément au RGPD, vous pouvez récupérer une copie de toutes vos données ou supprimer votre compte.
       </p>
+
+      <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
+        <h2 className="font-semibold">Abonnement</h2>
+        <p className="mt-1 text-sm text-gray-600">
+          Accès complet au service pour 39 € par mois, sans engagement. Paiement sécurisé par Stripe.
+        </p>
+        <div className="mt-3">
+          <SubscribeButton />
+        </div>
+      </section>
 
       <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="font-semibold">Télécharger mes données</h2>
