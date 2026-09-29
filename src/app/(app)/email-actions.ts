@@ -5,7 +5,7 @@ import { z } from "zod";
 import { DocumentError } from "@/lib/documents";
 import { EmailError } from "@/lib/email/brevo";
 import { sendDocumentByEmail } from "@/lib/email/send-document";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 
 const schema = z.object({
   kind: z.enum(["INVOICE", "QUOTE", "CREDIT_NOTE"]),
@@ -15,7 +15,7 @@ const schema = z.object({
 });
 
 export async function sendDocumentEmailAction(input: z.input<typeof schema>): Promise<{ error?: string }> {
-  const { company, userId } = await requireCompany();
+  const { company, userId } = await requireActiveCompany();
 
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Données invalides" };

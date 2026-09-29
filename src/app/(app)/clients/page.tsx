@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { ClientForm } from "./ClientForm";
 
 export default async function ClientsPage() {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const clients = await prisma.client.findMany({
     where: { companyId: company.id },
     orderBy: { name: "asc" },

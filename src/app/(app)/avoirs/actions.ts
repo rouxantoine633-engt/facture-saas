@@ -3,11 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createCreditNote, DocumentError } from "@/lib/documents";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { creditNoteSchema, type CreditNoteInput } from "@/lib/validation/document";
 
 export async function createCreditNoteAction(input: CreditNoteInput): Promise<{ error?: string }> {
-  const { company, userId } = await requireCompany();
+  const { company, userId } = await requireActiveCompany();
 
   const parsed = creditNoteSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Données invalides" };

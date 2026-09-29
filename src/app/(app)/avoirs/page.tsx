@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
 import { formatDate } from "@/lib/labels";
 
 export default async function CreditNotesPage() {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const notes = await prisma.creditNote.findMany({
     where: { companyId: company.id },
     include: { client: { select: { name: true } }, invoice: { select: { number: true } } },

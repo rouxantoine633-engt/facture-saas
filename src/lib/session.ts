@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasActiveAccess } from "@/lib/subscription";
 
 /** Renvoie l'utilisateur connecté et son entreprise, ou redirige vers l'étape manquante. */
 export async function requireCompany() {
@@ -11,4 +12,19 @@ export async function requireCompany() {
   });
   if (!company) redirect("/entreprise/configuration");
   return { userId: session.user.id, company };
+}
+
+/**
+ * Comme `requireCompany`, mais verrouille en plus les fonctionnalités
+ * payantes derrière un abonnement actif. Ne jamais utiliser sur le profil
+ * entreprise (qu'il faut pouvoir configurer avant de payer), ni sur `/compte`
+ * ou la route de facturation Stripe (sinon un utilisateur non abonné ne
+ * pourrait jamais atteindre le bouton pour s'abonner, ni ses droits RGPD).
+ */
+export async function requireActiveCompany() {
+  const { userId, company } = await requireCompany();
+  if (!hasActiveAccess(company.subscriptionStatus)) {
+    redirect("/compte?abonnement=requis");
+  }
+  return { userId, company };
 }

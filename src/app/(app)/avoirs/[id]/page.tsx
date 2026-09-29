@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { formatDate } from "@/lib/labels";
 import type { BuyerSnapshot, SellerSnapshot } from "@/lib/invoice-compliance";
 import { LinesTable } from "@/components/LinesTable";
@@ -9,7 +9,7 @@ import { SendEmailForm } from "@/components/SendEmailForm";
 
 export default async function CreditNoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const note = await prisma.creditNote.findFirst({
     where: { id: id, companyId: company.id },
     include: { client: true, invoice: true, lines: { orderBy: { position: "asc" } } },

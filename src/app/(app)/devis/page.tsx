@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
 import { formatDate, QUOTE_STATUS_LABELS } from "@/lib/labels";
 
 export default async function QuotesPage() {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const quotes = await prisma.quote.findMany({
     where: { companyId: company.id },
     include: { client: { select: { name: true } } },

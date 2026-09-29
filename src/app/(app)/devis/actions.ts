@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { QuoteStatus } from "@prisma/client";
 import { convertQuoteToInvoice, createQuote, DocumentError, updateQuote, updateQuoteStatus } from "@/lib/documents";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { MANUAL_QUOTE_STATUSES } from "@/lib/quote-status";
 import { quoteSchema, type QuoteInput } from "@/lib/validation/document";
 
@@ -13,7 +13,7 @@ export interface ActionResult {
 }
 
 export async function createQuoteAction(input: QuoteInput): Promise<ActionResult> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   const parsed = quoteSchema.safeParse(input);
   if (!parsed.success) {
@@ -48,7 +48,7 @@ export async function createQuoteAction(input: QuoteInput): Promise<ActionResult
 }
 
 export async function updateQuoteAction(quoteId: string, input: QuoteInput): Promise<ActionResult> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   const parsed = quoteSchema.safeParse(input);
   if (!parsed.success) {
@@ -82,7 +82,7 @@ export async function updateQuoteAction(quoteId: string, input: QuoteInput): Pro
 }
 
 export async function updateQuoteStatusAction(quoteId: string, status: string): Promise<ActionResult> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   if (!MANUAL_QUOTE_STATUSES.includes(status as QuoteStatus)) {
     return { error: "Statut invalide." };
@@ -101,7 +101,7 @@ export async function updateQuoteStatusAction(quoteId: string, status: string): 
 }
 
 export async function convertQuoteAction(quoteId: string): Promise<ActionResult> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   let invoiceId: string;
   try {

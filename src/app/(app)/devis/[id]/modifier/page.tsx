@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { QuoteForm, type QuoteFormInitial } from "@/components/QuoteForm";
 import { updateQuoteAction } from "../../actions";
 
@@ -11,7 +11,7 @@ function centsToEurosInput(cents: number): string {
 
 export default async function EditQuotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   const [quote, clients] = await Promise.all([
     prisma.quote.findFirst({

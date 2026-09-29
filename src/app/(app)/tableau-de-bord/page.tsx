@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
 import { startOfUtcDay } from "@/lib/dates";
 
 export default async function DashboardPage() {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const today = startOfUtcDay(new Date());
 
   const [drafts, unpaid, overdue, paid] = await Promise.all([

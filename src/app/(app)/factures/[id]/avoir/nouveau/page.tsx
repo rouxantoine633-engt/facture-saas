@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { CreditNoteForm } from "./CreditNoteForm";
 
 export default async function NewCreditNotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const invoice = await prisma.invoice.findFirst({
     where: { id: id, companyId: company.id },
     include: { lines: { orderBy: { position: "asc" } }, creditNotes: { select: { totalTtcCents: true } } },
