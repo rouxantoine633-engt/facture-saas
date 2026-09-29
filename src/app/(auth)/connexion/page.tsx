@@ -15,7 +15,7 @@ export default function ConnexionPage() {
 
 function ConnexionForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/tableau-de-bord";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/app/tableau-de-bord";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 

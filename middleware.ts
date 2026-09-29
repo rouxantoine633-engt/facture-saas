@@ -1,12 +1,13 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/connexion", "/inscription", "/compte/supprime"];
+const PUBLIC_EXACT_PATHS = ["/"];
+const PUBLIC_PREFIX_PATHS = ["/connexion", "/inscription", "/app/compte/supprime"];
 
 export default auth((req) => {
-  const isPublic = PUBLIC_PATHS.some((path) =>
-    req.nextUrl.pathname.startsWith(path)
-  );
+  const isPublic =
+    PUBLIC_EXACT_PATHS.includes(req.nextUrl.pathname) ||
+    PUBLIC_PREFIX_PATHS.some((path) => req.nextUrl.pathname.startsWith(path));
   // /api/cron est protégée par son propre secret (CRON_SECRET), pas par la
   // session ; /api/stripe/webhook par la signature Stripe, appelée sans
   // session applicative.
