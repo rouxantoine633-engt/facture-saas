@@ -29,6 +29,11 @@ export async function POST(request: Request) {
     const stripe = getStripeClient();
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
+      // Managed Payments (calcul de taxe automatique par Stripe) exige un
+      // tax_code produit ; la question de la TVA sur les frais d'abonnement
+      // n'est pas encore tranchée (voir README, point de conformité 16) —
+      // désactivé explicitement plutôt que de deviner un code de taxe.
+      managed_payments: { enabled: false },
       line_items: [
         {
           price_data: {
