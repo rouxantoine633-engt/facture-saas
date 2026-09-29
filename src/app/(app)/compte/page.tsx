@@ -4,13 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { previewAccountDeletion } from "@/lib/gdpr/account";
 import { DeleteAccountForm } from "./DeleteAccountForm";
 import { SubscribeButton } from "@/components/SubscribeButton";
+import { hasActiveAccess, SUBSCRIPTION_STATUS_LABELS } from "@/lib/subscription";
+import { formatDate } from "@/lib/labels";
 
 export default async function AccountPage() {
   const session = await auth();
   if (!session?.user?.id || !session.user.email) redirect("/connexion");
 
-  const company = await prisma.company.findUnique({ where: { ownerId: session.user.id }, select: { id: true } });
+  const company = await prisma.company.findUnique({
+    where: { ownerId: session.user.id },
+    select: { id: true, subscriptionStatus: true, subscriptionCurrentPeriodEnd: true },
+  });
   const preview = company ? await previewAccountDeletion(company.id) : { strategy: "HARD_DELETE" as const };
+  const isActive = company ? hasActiveAccess(company.subscriptionStatus) : false;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -21,12 +27,25 @@ export default async function AccountPage() {
 
       <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="font-semibold">Abonnement</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Accès complet au service pour 39 € par mois, sans engagement. Paiement sécurisé par Stripe.
+        <p className="mt-1 text-sm">
+          Statut :{" "}
+          <span className={isActive ? "font-medium text-green-700" : "font-medium text-gray-700"}>
+            {SUBSCRIPTION_STATUS_LABELS[company?.subscriptionStatus ?? "NONE"]}
+          </span>
+          {isActive && company?.subscriptionCurrentPeriodEnd && (
+            <> · prochain renouvellement le {formatDate(company.subscriptionCurrentPeriodEnd)}</>
+          )}
         </p>
-        <div className="mt-3">
-          <SubscribeButton />
-        </div>
+        {!isActive && (
+          <>
+            <p className="mt-1 text-sm text-gray-600">
+              Accès complet au service pour 39 € par mois, sans engagement. Paiement sécurisé par Stripe.
+            </p>
+            <div className="mt-3">
+              <SubscribeButton />
+            </div>
+          </>
+        )}
       </section>
 
       <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">

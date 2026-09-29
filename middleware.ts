@@ -7,9 +7,13 @@ export default auth((req) => {
   const isPublic = PUBLIC_PATHS.some((path) =>
     req.nextUrl.pathname.startsWith(path)
   );
-  // /api/cron est protégée par son propre secret (CRON_SECRET), pas par la session.
+  // /api/cron est protégée par son propre secret (CRON_SECRET), pas par la
+  // session ; /api/stripe/webhook par la signature Stripe, appelée sans
+  // session applicative.
   const isApiAuth =
-    req.nextUrl.pathname.startsWith("/api/auth") || req.nextUrl.pathname.startsWith("/api/cron");
+    req.nextUrl.pathname.startsWith("/api/auth") ||
+    req.nextUrl.pathname.startsWith("/api/cron") ||
+    req.nextUrl.pathname === "/api/stripe/webhook";
 
   if (!req.auth && !isPublic && !isApiAuth) {
     const loginUrl = new URL("/connexion", req.nextUrl.origin);
