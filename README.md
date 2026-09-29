@@ -118,9 +118,19 @@ local, avant et après la migration Next 16 :
   sélecteur de statut n'apparaît plus du tout.
 - **Abonnement Stripe (2026-09-29)** : sans `STRIPE_SECRET_KEY` configurée,
   le bouton affiche « Le paiement n'est pas encore configuré sur ce
-  service » (500 propre, sans stack trace ni crash). Non testé avec de
-  vraies clés Stripe (voir point de conformité dédié) : aucune clé,
-  live ou test, n'a été fournie ni utilisée pendant le développement.
+  service » (500 propre, sans stack trace ni crash).
+- **Webhook Stripe (2026-09-29, suite)** : testé via un événement signé
+  localement (`npm run smoke:stripe`, `scripts/stripe-webhook-test.mjs` —
+  génère une signature Stripe valide sans réseau ni compte Stripe réel) —
+  signature invalide rejetée (400), `customer.subscription.updated`
+  passe bien une entreprise en `ACTIVE` avec la bonne date de
+  renouvellement, `customer.subscription.deleted` en `CANCELED`, un
+  `customer` Stripe inconnu ignoré sans erreur (200). Vérifié aussi en
+  navigateur sur `/compte` : le statut « Actif · prochain renouvellement
+  le JJ/MM/AAAA » s'affiche et le bouton d'abonnement disparaît bien tant
+  qu'un abonnement actif existe. Non testé avec de vraies clés Stripe ni
+  un vrai paiement (voir point de conformité dédié) : aucune clé, live ou
+  test, n'a été fournie ni utilisée pendant le développement.
 - **Export comptable** : contenu du CSV vérifié directement (pas seulement
   téléchargé) — BOM UTF-8 présent dans les octets réels, montants en
   virgule décimale, avoir exporté en négatif avec référence à la facture
@@ -147,6 +157,15 @@ Lancer les tests :
 
 ```bash
 npm test
+```
+
+Tester le webhook Stripe sans compte Stripe réel (serveur `npm run dev`
+déjà lancé, avec `STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET` renseignés
+— une valeur locale quelconque suffit, aucun appel réseau à Stripe n'est
+fait) :
+
+```bash
+npm run smoke:stripe
 ```
 
 ## État d'avancement du MVP
@@ -205,10 +224,15 @@ npm test
 - [x] Abonnement SaaS (`src/lib/stripe.ts`, `/api/stripe/checkout`,
       `SubscribeButton` sur `/compte`) : session Stripe Checkout (mode
       abonnement, 39 €/mois, prix créé à la volée — aucun objet Price à
-      préconfigurer dans le dashboard Stripe), redirection côté client.
-      **Périmètre volontairement limité à la demande initiale** : ni webhook,
-      ni statut d'abonnement stocké en base, ni fonctionnalité verrouillée
-      derrière l'abonnement — voir le point de conformité dédié ci-dessous
+      préconfigurer dans le dashboard Stripe), redirection côté client
+- [x] Webhook Stripe (`/api/stripe/webhook`, `src/lib/subscription.ts`) :
+      seule source de vérité du statut d'abonnement (`Company.subscriptionStatus`),
+      synchronisé depuis `checkout.session.completed` et
+      `customer.subscription.created/updated/deleted`, vérification de
+      signature obligatoire. **Toujours hors périmètre** : aucune
+      fonctionnalité verrouillée derrière l'abonnement, pas de gestion des
+      échecs de paiement au-delà du statut brut, pas de portail de gestion
+      de l'abonnement — voir le point de conformité dédié ci-dessous
 
 ## Principes de conformité appliqués
 
@@ -300,17 +324,22 @@ un expert-comptable et/ou un juriste avant mise en production :
     légale de traitement par finalité, registre des traitements, DPA avec
     Brevo (et l'hébergeur base de données), et procédure documentée pour une
     demande d'accès/rectification reçue autrement que via `/compte`.
-16. **Abonnement Stripe (2026-09-29)** : périmètre strictement limité à ce qui
-    a été demandé — créer la session Checkout et rediriger. **Aucun webhook**
-    n'écoute `checkout.session.completed` / `customer.subscription.*` : le
-    paiement Stripe réussit, mais rien dans la base ne sait qu'un utilisateur
-    est abonné, et aucune fonctionnalité n'est restreinte aux non-abonnés.
-    Avant un vrai lancement commercial, il faudra : un endpoint webhook
-    (`STRIPE_WEBHOOK_SECRET`, vérification de signature), un champ
-    `stripeCustomerId`/statut d'abonnement sur `Company`, une politique de
-    gestion des échecs de paiement/annulations, les CGV mentionnant Stripe
-    comme sous-traitant, et la question de la TVA sur les frais d'abonnement
-    eux-mêmes (distincte de la TVA facturée aux clients de l'utilisateur).
+16. **Abonnement Stripe (2026-09-29, mis à jour 2026-09-29)** : le webhook
+    (`/api/stripe/webhook`) écoute désormais `checkout.session.completed` et
+    `customer.subscription.created/updated/deleted`, et synchronise
+    `Company.subscriptionStatus`/`subscriptionCurrentPeriodEnd` — vérifié de
+    bout en bout avec un événement Stripe signé localement (`npm run
+    smoke:stripe`), y compris le rejet d'une signature invalide et la
+    gestion propre d'un client Stripe inconnu. **Ce qui reste hors périmètre** :
+    aucune fonctionnalité n'est encore restreinte aux non-abonnés (le statut
+    est stocké et affiché sur `/compte`, mais rien ne bloque l'accès pour un
+    statut `NONE`/`CANCELED`/`UNPAID`) ; pas de gestion des échecs de paiement
+    au-delà du statut brut Stripe (pas d'email de relance de paiement propre
+    à l'app) ; pas de bouton pour gérer/résilier l'abonnement depuis l'app
+    (passage par le Customer Portal Stripe ou une page dédiée à prévoir) ;
+    les CGV mentionnant Stripe comme sous-traitant et la question de la TVA
+    sur les frais d'abonnement (distincte de la TVA facturée par
+    l'utilisateur à ses propres clients) restent à traiter avec un juriste.
     Développement et tests à faire avec des clés Stripe de **test**
     (`pk_test_`/`sk_test_`) ; les clés live ne doivent être saisies que
     directement dans les variables d'environnement de production, jamais

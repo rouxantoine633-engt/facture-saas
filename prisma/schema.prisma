@@ -140,6 +140,21 @@ enum ReminderStatus {
   CANCELLED
 }
 
+// Reprend directement les valeurs de Stripe (Subscription.status) : un
+// passthrough plutôt qu'un remappage évite de perdre de l'information et
+// reste correct si Stripe ajoute un statut. NONE = jamais souscrit.
+enum SubscriptionStatus {
+  NONE
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  PAUSED
+}
+
 // ---------------------------------------------------------------------------
 // Entreprise (profil vendeur) — saisi une fois, réutilisé partout
 // ---------------------------------------------------------------------------
@@ -188,6 +203,13 @@ model Company {
 
   // Relances automatiques : décalages en jours après échéance (ex. [7, 15])
   reminderOffsetsDays Int[] @default([7, 15])
+
+  // Abonnement Stripe — alimenté uniquement par le webhook, jamais saisi
+  // manuellement (voir /api/stripe/webhook).
+  stripeCustomerId             String?            @unique
+  stripeSubscriptionId         String?            @unique
+  subscriptionStatus           SubscriptionStatus @default(NONE)
+  subscriptionCurrentPeriodEnd DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
