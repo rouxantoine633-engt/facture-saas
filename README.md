@@ -8,6 +8,7 @@
 - **@react-pdf/renderer** — génération PDF côté serveur
 - **Vitest** — tests unitaires (priorité absolue : calculs financiers)
 - **Tailwind CSS** — UI, accessibilité WCAG AA
+- **Framer Motion** — animations au scroll de la landing page publique
 - **Stripe Checkout** — abonnement SaaS mensuel
 
 ## État de la vérification (première exécution réelle)
@@ -167,6 +168,51 @@ local, avant et après la migration Next 16 :
   gérée proprement côté UI — confirme que tout le code (PDF, pièce jointe,
   appel réseau, gestion d'erreur) fonctionne ; seule la délivrance réelle
   reste à vérifier avec une vraie clé Brevo.
+- **Landing page publique Onyx (2026-09-29)** : page d'accueil marketing
+  (hero avec parallax, section fonctionnalités en scroll pinné, aperçu
+  produit avec effet 3D au scroll, tarif à 39 €/mois, CTA vers l'inscription),
+  construite avec Tailwind CSS et Framer Motion. Vérifiée dans le
+  navigateur en desktop et en mobile : toutes les animations au scroll,
+  aucune erreur console propre au code de la page.
+- **Séparation marketing / application sous `/app` (2026-09-29)** : la
+  racine `/` affichait auparavant l'application interne (redirection selon
+  la session) au lieu de la landing marketing, empêchant tout visiteur
+  connecté de jamais voir la page publique. Corrigé : `/` affiche
+  désormais toujours la landing page, et toute l'application interne
+  (tableau de bord, devis, factures, avoirs, clients, export, profil
+  entreprise, mes données) a été déplacée sous `/app/*` (ex.
+  `/tableau-de-bord` → `/app/tableau-de-bord`). `/connexion` et
+  `/inscription` restent à la racine. Vérifié dans le navigateur : parcours
+  complet re-testé de bout en bout à deux reprises après la migration
+  (inscription → connexion → configuration entreprise → client → devis →
+  facture → paiement (complet puis partiel) → avoir → export comptable →
+  export RGPD → suppression de compte), anciennes routes en 404, les huit
+  routes protégées de `/app/*` redirigeant vers `/connexion` sans session.
+- **Bug réel trouvé et corrigé — faille d'accès sur
+  `/app/entreprise/configuration` (2026-09-29)** : cette page était la
+  seule à ne pas vérifier elle-même la session (elle comptait entièrement
+  sur le middleware), et le middleware s'est révélé peu fiable pour cette
+  route précise sous Next.js 16.3.6 en mode dev — reproduit de façon
+  déterministe même avec une route neuve de forme identique créée
+  spécifiquement pour le test, cache `.next` vidé et serveur redémarré à
+  froid à chaque essai (donc pas un problème dans la configuration du
+  middleware du projet, plutôt une aspérité du framework à surveiller sur
+  les futures versions de Next.js). Corrigé en profondeur en ajoutant la
+  même vérification de session que sur les pages sœurs (`/app/compte`),
+  directement dans la page plutôt que de dépendre uniquement du
+  middleware. Aucune donnée n'était exposée au-delà de l'affichage du
+  formulaire vide (l'action de sauvegarde vérifiait déjà la session).
+- **Bug réel trouvé et corrigé — redirections Stripe cassées après le
+  déplacement (2026-09-29)** : `success_url`/`cancel_url` de la session
+  Stripe Checkout pointaient encore vers l'ancien chemin `/compte` ; un
+  utilisateur payant réel aurait atterri sur une page 404 juste après
+  avoir payé. Trouvé en retestant le parcours d'abonnement de bout en
+  bout avec de vraies clés de test et le webhook relayé par la Stripe CLI
+  (carte `4242 4242 4242 4242`) — corrigé vers `/app/compte`, revérifié
+  avec un nouveau paiement réel complet : redirection correcte, statut
+  « Actif » affiché immédiatement, `stripeCustomerId`/
+  `stripeSubscriptionId` enregistrés en base, fonctionnalités payantes
+  débloquées. Clés Stripe et compte de test retirés après vérification.
 
 ## Démarrage
 
@@ -206,8 +252,8 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook \
 ```
 
 Copier le `whsec_...` affiché dans `STRIPE_WEBHOOK_SECRET`, redémarrer
-`npm run dev`, puis cliquer sur « S'abonner » sur `/compte` et payer avec
-la carte de test `4242 4242 4242 4242` (date future quelconque, CVC
+`npm run dev`, puis cliquer sur « S'abonner » sur `/app/compte` et payer
+avec la carte de test `4242 4242 4242 4242` (date future quelconque, CVC
 quelconque).
 
 ## État d'avancement du MVP
@@ -230,14 +276,19 @@ quelconque).
       avec mentions légales figées, émission, suppression de brouillon,
       paiements partiels avec historique et solde restant), tableau de bord
       par statut
-- [x] Modification d'un devis brouillon (`/devis/[id]/modifier`, `QuoteForm`
+- [x] Landing page publique Onyx (`src/components/landing/LandingPage.tsx`) à
+      la racine `/`, séparée de l'application interne déplacée sous `/app/*`
+      (voir « Vérification dans le navigateur » ci-dessus) : hero, présentation
+      des fonctionnalités en scroll pinné, aperçu produit avec parallax,
+      tarification, CTA vers l'inscription et l'abonnement Stripe
+- [x] Modification d'un devis brouillon (`/app/devis/[id]/modifier`, `QuoteForm`
       partagé avec la création) : bloquée dès que le devis n'est plus un
       brouillon, aussi bien côté page que côté service (`updateQuote`)
 - [x] Changement manuel de statut d'un devis (`src/lib/quote-status.ts`,
       `updateQuoteStatus`) : envoyé/accepté/refusé/expiré, librement entre eux ;
       verrouillé dès que le devis est converti en facture, côté service comme
       côté page (le sélecteur disparaît alors entièrement)
-- [x] RGPD (`/compte`, `src/lib/gdpr/`) : export de portabilité en JSON (profil,
+- [x] RGPD (`/app/compte`, `src/lib/gdpr/`) : export de portabilité en JSON (profil,
       entreprise, clients, devis, factures, avoirs) et fermeture de compte —
       suppression totale si rien n'a jamais été émis, sinon anonymisation
       (identité, coordonnées, mot de passe, journal d'audit) en conservant les
@@ -254,17 +305,17 @@ quelconque).
       et envoie les relances aux paliers configurés (défaut J+7 / J+15), avec
       plan pur testé (`src/lib/reminders.ts`), anti-doublon en base et reprise
       des échecs
-- [x] Avoirs (`src/lib/credit-notes.ts`, `/avoirs`) : correction totale ou
+- [x] Avoirs (`src/lib/credit-notes.ts`, `/app/avoirs`) : correction totale ou
       partielle d'une facture émise, numérotation propre (AV-), mentions
       vendeur/client reprises de la facture, PDF, envoi par email, triggers SQL
       d'immutabilité, statut de la facture mis à jour, restes à payer et
       relances tenant compte des avoirs
-- [x] Export comptable (`/export`) : journal des ventes (factures émises + avoirs
+- [x] Export comptable (`/app/export`) : journal des ventes (factures émises + avoirs
       en négatif, ventilation TVA par taux) et encaissements, en CSV Excel-FR
       (UTF-8 BOM, `;`, virgule décimale) avec protection contre l'injection de
       formules ; clients repris des mentions figées à l'émission
 - [x] Abonnement SaaS (`src/lib/stripe.ts`, `/api/stripe/checkout`,
-      `SubscribeButton` sur `/compte`) : session Stripe Checkout (mode
+      `SubscribeButton` sur `/app/compte`) : session Stripe Checkout (mode
       abonnement, 39 €/mois, prix créé à la volée — aucun objet Price à
       préconfigurer dans le dashboard Stripe), redirection côté client
 - [x] Webhook Stripe (`/api/stripe/webhook`, `src/lib/subscription.ts`) :
@@ -276,10 +327,11 @@ quelconque).
       `src/lib/session.ts`) : clients, devis, factures, avoirs, export
       comptable et tableau de bord exigent un abonnement actif (`ACTIVE`,
       `TRIALING`, ou `PAST_DUE` — Stripe retente le paiement avant
-      d'annuler), sinon redirection vers `/compte?abonnement=requis` avec un
-      message explicite. Restent volontairement libres, à l'inverse : le
-      profil entreprise (à configurer avant de pouvoir payer), `/compte`
-      (bouton d'abonnement + droits RGPD) et la route de facturation Stripe
+      d'annuler), sinon redirection vers `/app/compte?abonnement=requis` avec
+      un message explicite. Restent volontairement libres, à l'inverse : le
+      profil entreprise (`/app/entreprise/configuration`, à configurer avant
+      de pouvoir payer), `/app/compte` (bouton d'abonnement + droits RGPD) et
+      la route de facturation Stripe
       elle-même — sans quoi un utilisateur non abonné ne pourrait jamais
       s'abonner ni exercer ses droits RGPD. Couvre aussi bien les pages que
       les *server actions* et les *route handlers* (PDF, export CSV).
@@ -376,7 +428,7 @@ un expert-comptable et/ou un juriste avant mise en production :
 15. **RGPD — reste à faire hors code** : politique de confidentialité, base
     légale de traitement par finalité, registre des traitements, DPA avec
     Brevo (et l'hébergeur base de données), et procédure documentée pour une
-    demande d'accès/rectification reçue autrement que via `/compte`.
+    demande d'accès/rectification reçue autrement que via `/app/compte`.
 16. **Abonnement Stripe (2026-09-29, mis à jour 2026-09-29)** : le webhook
     (`/api/stripe/webhook`) écoute `checkout.session.completed` et
     `customer.subscription.created/updated/deleted`, synchronise
