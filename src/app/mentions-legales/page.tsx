@@ -8,14 +8,13 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
-    <LegalLayout title="Mentions légales" updatedAt="29 septembre 2026">
+    <LegalLayout title="Mentions légales" updatedAt="30 septembre 2026">
       <LegalSection title="1. Éditeur du site">
         <p>
           Le présent site et le service Onyx (ci-après « le Service ») sont édités par :{" "}
-          <strong className="text-white">[Nom légal de l&apos;éditeur à compléter]</strong>, [statut juridique à
-          compléter, ex. entrepreneur individuel / SASU], immatriculé(e) sous le numéro SIREN{" "}
-          <strong className="text-white">[SIREN à compléter]</strong>, dont le siège est situé{" "}
-          <strong className="text-white">[adresse à compléter]</strong>.
+          <strong className="text-white">Antoine ROUX</strong>, entrepreneur individuel, immatriculé sous le numéro
+          SIREN <strong className="text-white">105 801 179</strong>, dont le siège est situé{" "}
+          <strong className="text-white">4 impasse du Pariou, 63720 Ennezat</strong>.
         </p>
         <p>
           Le Service est proposé sous le régime de la franchise en base de TVA prévue à l&apos;article 293 B du Code
@@ -23,9 +22,15 @@ export default function MentionsLegalesPage() {
           l&apos;abonnement Onyx.
         </p>
         <p>
-          Contact : <strong className="text-white">[adresse email de contact à compléter]</strong>
+          Contact :{" "}
+          <a
+            href="mailto:roux.antoine633@gmail.com"
+            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+          >
+            roux.antoine633@gmail.com
+          </a>
         </p>
-        <p>Directeur de la publication : [Nom à compléter]</p>
+        <p>Directeur de la publication : ROUX Antoine</p>
       </LegalSection>
 
       <LegalSection title="2. Hébergement">
@@ -75,7 +80,13 @@ export default function MentionsLegalesPage() {
       <LegalSection title="6. Contact">
         <p>
           Pour toute question relative aux présentes mentions légales, vous pouvez écrire à{" "}
-          <strong className="text-white">[adresse email de contact à compléter]</strong>.
+          <a
+            href="mailto:roux.antoine633@gmail.com"
+            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+          >
+            roux.antoine633@gmail.com
+          </a>
+          .
         </p>
       </LegalSection>
     </LegalLayout>
