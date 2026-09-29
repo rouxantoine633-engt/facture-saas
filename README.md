@@ -128,9 +128,26 @@ local, avant et après la migration Next 16 :
   `customer` Stripe inconnu ignoré sans erreur (200). Vérifié aussi en
   navigateur sur `/compte` : le statut « Actif · prochain renouvellement
   le JJ/MM/AAAA » s'affiche et le bouton d'abonnement disparaît bien tant
-  qu'un abonnement actif existe. Non testé avec de vraies clés Stripe ni
-  un vrai paiement (voir point de conformité dédié) : aucune clé, live ou
-  test, n'a été fournie ni utilisée pendant le développement.
+  qu'un abonnement actif existe.
+- **Test de bout en bout réel avec de vraies clés de test (2026-09-29)** :
+  l'utilisateur a fourni ses clés Stripe de **test** (`pk_test_`/`sk_test_`,
+  jamais les clés live collées plus tôt, écartées comme expliqué à ce
+  moment-là) et le webhook a été relayé localement via la Stripe CLI
+  (`stripe listen`, installée depuis les releases GitHub officielles) au
+  lieu d'un événement signé à la main. Parcours complet effectué dans le
+  navigateur : clic sur « S'abonner » → vraie redirection vers la page
+  Stripe Checkout hébergée (badge « Environnement de test », bon produit,
+  bon prix 39,00 €/mois, email prérempli) → carte de test `4242 4242 4242
+  4242` → paiement accepté → retour sur `/compte?abonnement=succes` →
+  statut déjà « Actif · prochain renouvellement le 29/10/2026 » (le
+  webhook réel avait déjà été traité) → `stripeCustomerId`/
+  `stripeSubscriptionId` réels enregistrés en base → les six pages
+  payantes redeviennent accessibles sans reconnexion. **Un vrai bug a été
+  trouvé et corrigé à cette occasion** (voir `managed_payments` dans
+  `src/lib/stripe.ts`/`/api/stripe/checkout` et le point de conformité
+  dédié) : impossible à détecter sans un aller-retour réel vers l'API
+  Stripe. État remis à zéro après le test (entreprise repassée à `NONE`,
+  clés retirées de `.env`, process `stripe listen` arrêté).
 - **Verrouillage des fonctionnalités payantes (2026-09-29, suite)** :
   entreprise de test sans abonnement (`subscriptionStatus: NONE`) — les six
   surfaces payantes (`/tableau-de-bord`, `/clients`, `/factures`, `/avoirs`,
@@ -176,6 +193,22 @@ fait) :
 ```bash
 npm run smoke:stripe
 ```
+
+Pour un vrai test de paiement en mode test (recommandé avant toute mise en
+production du module Stripe) : renseigner de vraies clés `pk_test_`/
+`sk_test_` dans `.env`, puis relayer les webhooks vers le serveur local
+avec la [Stripe CLI](https://docs.stripe.com/stripe-cli) :
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook \
+  --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted \
+  --all-snapshot
+```
+
+Copier le `whsec_...` affiché dans `STRIPE_WEBHOOK_SECRET`, redémarrer
+`npm run dev`, puis cliquer sur « S'abonner » sur `/compte` et payer avec
+la carte de test `4242 4242 4242 4242` (date future quelconque, CVC
+quelconque).
 
 ## État d'avancement du MVP
 
@@ -352,7 +385,18 @@ un expert-comptable et/ou un juriste avant mise en production :
     tableau de bord) sont désormais verrouillées derrière un abonnement
     actif (`requireActiveCompany`, vérifié en navigateur : accès refusé et
     redirigé sans abonnement, débloqué immédiatement après activation en
-    base, y compris sur les routes PDF). **Ce qui reste hors périmètre** :
+    base, y compris sur les routes PDF). **Validé par un vrai parcours de
+    paiement en mode test** (clés `pk_test_`/`sk_test_` fournies par
+    l'utilisateur, webhook relayé par la Stripe CLI) — voir la section
+    vérification navigateur ci-dessus. Ce test a révélé et corrigé un bug
+    réel : le compte Stripe a « Managed Payments » (calcul de taxe
+    automatique) activé par défaut, qui exige un `tax_code` sur le produit
+    et faisait échouer toute création de session. Désactivé explicitement
+    (`managed_payments: { enabled: false }`) plutôt que de deviner un code
+    de taxe, en cohérence avec le fait que la question de la TVA sur les
+    frais d'abonnement n'est pas encore tranchée (voir plus bas) — **à
+    reconsidérer explicitement** si l'éditeur décide un jour de laisser
+    Stripe gérer cette taxe automatiquement. **Ce qui reste hors périmètre** :
     pas de gestion des échecs de paiement au-delà du statut brut Stripe (pas
     d'email de relance de paiement propre à l'app — Stripe envoie les siens
     par défaut, à vérifier/personnaliser) ; pas de bouton pour gérer/résilier
