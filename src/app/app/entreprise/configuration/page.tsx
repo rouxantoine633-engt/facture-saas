@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { getCompanyAction } from "./actions";
 import { CompanyForm } from "./CompanyForm";
 import type { CompanyInput } from "@/lib/validation/company";
 
 export default async function CompanyConfigurationPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/connexion");
+
   const company = await getCompanyAction();
 
   const defaultValues: Partial<CompanyInput> = company
