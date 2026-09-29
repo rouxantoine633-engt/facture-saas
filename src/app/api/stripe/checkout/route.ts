@@ -47,8 +47,8 @@ export async function POST(request: Request) {
       ],
       client_reference_id: company.id,
       customer_email: session.user.email ?? undefined,
-      success_url: `${origin}/compte?abonnement=succes`,
-      cancel_url: `${origin}/compte?abonnement=annule`,
+      success_url: `${origin}/app/compte?abonnement=succes`,
+      cancel_url: `${origin}/app/compte?abonnement=annule`,
     });
 
     if (!checkoutSession.url) {
