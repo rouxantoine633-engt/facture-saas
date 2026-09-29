@@ -10,21 +10,21 @@ export async function requireCompany() {
   const company = await prisma.company.findUnique({
     where: { ownerId: session.user.id },
   });
-  if (!company) redirect("/entreprise/configuration");
+  if (!company) redirect("/app/entreprise/configuration");
   return { userId: session.user.id, company };
 }
 
 /**
  * Comme `requireCompany`, mais verrouille en plus les fonctionnalités
  * payantes derrière un abonnement actif. Ne jamais utiliser sur le profil
- * entreprise (qu'il faut pouvoir configurer avant de payer), ni sur `/compte`
+ * entreprise (qu'il faut pouvoir configurer avant de payer), ni sur `/app/compte`
  * ou la route de facturation Stripe (sinon un utilisateur non abonné ne
  * pourrait jamais atteindre le bouton pour s'abonner, ni ses droits RGPD).
  */
 export async function requireActiveCompany() {
   const { userId, company } = await requireCompany();
   if (!hasActiveAccess(company.subscriptionStatus)) {
-    redirect("/compte?abonnement=requis");
+    redirect("/app/compte?abonnement=requis");
   }
   return { userId, company };
 }

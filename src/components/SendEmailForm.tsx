@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { sendDocumentEmailAction } from "@/app/(app)/email-actions";
+import { sendDocumentEmailAction } from "@/app/app/email-actions";
 
 export function SendEmailForm({
   kind,

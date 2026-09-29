@@ -1,0 +1,91 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { requireActiveCompany } from "@/lib/session";
+import { formatDate, QUOTE_STATUS_LABELS } from "@/lib/labels";
+import { LinesTable } from "@/components/LinesTable";
+import { ActionButton } from "@/components/ActionButton";
+import { convertQuoteAction } from "../actions";
+import { SendEmailForm } from "@/components/SendEmailForm";
+import { QuoteStatusForm } from "./QuoteStatusForm";
+
+export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { company } = await requireActiveCompany();
+  const quote = await prisma.quote.findFirst({
+    where: { id: id, companyId: company.id },
+    include: { client: true, lines: { orderBy: { position: "asc" } } },
+  });
+  if (!quote) notFound();
+
+  const lastEmail = await prisma.auditLog.findFirst({
+    where: { companyId: company.id, entityId: quote.id, action: "email.quote_sent" },
+    orderBy: { createdAt: "desc" },
+  });
+  const lastSent = lastEmail
+    ? `Dernier envoi : le ${formatDate(lastEmail.createdAt)} à ${(lastEmail.metadata as { to?: string } | null)?.to ?? ""}`
+    : undefined;
+
+  const canConvert = quote.status !== "CONVERTED" && quote.status !== "REJECTED" && quote.status !== "EXPIRED";
+  const convert = convertQuoteAction.bind(null, quote.id);
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <h1 className="text-2xl font-bold">Devis {quote.number}</h1>
+      <p className="mt-1 text-gray-600">
+        {QUOTE_STATUS_LABELS[quote.status]} · émis le {formatDate(quote.issueDate)}
+        {quote.validUntil && ` · valable jusqu'au ${formatDate(quote.validUntil)}`}
+      </p>
+      <p className="mt-4">
+        <span className="font-medium">{quote.client.name}</span>
+        <br />
+        {quote.client.addressLine1}, {quote.client.postalCode} {quote.client.city}
+      </p>
+
+      <div className="mt-6">
+        <LinesTable
+          lines={quote.lines}
+          subtotalHtCents={quote.subtotalHtCents}
+          totalVatCents={quote.totalVatCents}
+          totalTtcCents={quote.totalTtcCents}
+          franchiseEnBase={company.vatRegime === "FRANCHISE_EN_BASE"}
+        />
+      </div>
+
+      {quote.notes && <p className="mt-4 whitespace-pre-line text-sm text-gray-700">{quote.notes}</p>}
+
+      <div className="mt-8">
+        <SendEmailForm kind="QUOTE" documentId={quote.id} defaultTo={quote.client.email ?? ""} lastSent={lastSent} />
+      </div>
+
+      {quote.status !== "CONVERTED" && (
+        <div className="mt-8">
+          <QuoteStatusForm quoteId={quote.id} currentStatus={quote.status} />
+        </div>
+      )}
+
+      <div className="mt-8 flex items-start gap-6">
+        {quote.status === "DRAFT" && (
+          <Link href={`/app/devis/${quote.id}/modifier`} className="text-brand-700 underline">
+            Modifier le devis
+          </Link>
+        )}
+        {canConvert && (
+          <ActionButton
+            action={convert}
+            label="Convertir en facture"
+            pendingLabel="Conversion…"
+          />
+        )}
+        <a href={`/app/devis/${quote.id}/pdf`} className="text-brand-700 underline">
+          Télécharger le PDF
+        </a>
+        {quote.convertedInvoiceId && (
+          <Link href={`/app/factures/${quote.convertedInvoiceId}`} className="text-brand-700 underline">
+            Voir la facture générée
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
