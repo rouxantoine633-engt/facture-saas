@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 
 export default function ConfidentialitePage() {
   return (
-    <LegalLayout title="Politique de confidentialité" updatedAt="29 septembre 2026">
+    <LegalLayout title="Politique de confidentialité" updatedAt="30 septembre 2026">
       <LegalSection title="1. Responsable du traitement">
         <p>
           Le responsable du traitement des données à caractère personnel collectées via le service Onyx est{" "}
-          <strong className="text-white">[Nom légal de l&apos;éditeur à compléter]</strong>, dont les coordonnées
-          figurent dans les{" "}
+          <strong className="text-white">Antoine ROUX</strong>, entrepreneur individuel (SIREN 105 801 179), dont les
+          coordonnées figurent dans les{" "}
           <a href="/mentions-legales" className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200">
             mentions légales
           </a>
@@ -156,7 +156,13 @@ export default function ConfidentialitePage() {
         />
         <p>
           Pour toute demande ne pouvant être satisfaite directement depuis votre compte, contactez-nous à{" "}
-          <strong className="text-white">[adresse email de contact à compléter]</strong>.
+          <a
+            href="mailto:roux.antoine633@gmail.com"
+            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+          >
+            roux.antoine633@gmail.com
+          </a>
+          .
         </p>
       </LegalSection>
 
@@ -186,7 +192,13 @@ export default function ConfidentialitePage() {
       <LegalSection title="12. Contact">
         <p>
           Pour toute question relative à la protection de vos données :{" "}
-          <strong className="text-white">[adresse email de contact à compléter]</strong>.
+          <a
+            href="mailto:roux.antoine633@gmail.com"
+            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+          >
+            roux.antoine633@gmail.com
+          </a>
+          .
         </p>
       </LegalSection>
     </LegalLayout>

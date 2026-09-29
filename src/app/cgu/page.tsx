@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 
 export default function CguPage() {
   return (
-    <LegalLayout title="Conditions Générales d'Utilisation et de Vente" updatedAt="29 septembre 2026">
+    <LegalLayout title="Conditions Générales d'Utilisation et de Vente" updatedAt="30 septembre 2026">
       <LegalSection title="1. Objet">
         <p>
           Les présentes Conditions Générales d&apos;Utilisation et de Vente (« CGU/CGV ») régissent l&apos;accès et
           l&apos;utilisation du service Onyx (« le Service »), une application de gestion de devis et de factures
-          proposée en abonnement mensuel par [Nom légal de l&apos;éditeur à compléter] (« l&apos;Éditeur »),
+          proposée en abonnement mensuel par Antoine ROUX, entrepreneur individuel, SIREN 105 801 179 (« l&apos;Éditeur »),
           accessible à l&apos;adresse du site. Elles s&apos;appliquent à tout utilisateur créant un compte sur le
           Service (« le Client »).
         </p>
@@ -161,7 +161,14 @@ export default function CguPage() {
 
       <LegalSection title="13. Contact">
         <p>
-          Pour toute question relative aux présentes CGU/CGV : <strong className="text-white">[adresse email de contact à compléter]</strong>.
+          Pour toute question relative aux présentes CGU/CGV :{" "}
+          <a
+            href="mailto:roux.antoine633@gmail.com"
+            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+          >
+            roux.antoine633@gmail.com
+          </a>
+          .
         </p>
       </LegalSection>
     </LegalLayout>
