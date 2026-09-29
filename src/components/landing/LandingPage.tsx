@@ -9,10 +9,9 @@ import {
   useMotionValueEvent,
   AnimatePresence,
 } from "framer-motion";
-import { Inter, Space_Grotesk } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
+import { inter, display } from "@/lib/fonts";
+import { LogoMark } from "@/components/brand/LogoMark";
+import { SiteFooter } from "@/components/legal/SiteFooter";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -58,30 +57,6 @@ function GradientOrb({
       animate={{ y: [0, 40, 0], x: [0, 24, 0], opacity: [0.5, 0.8, 0.5] }}
       transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
     />
-  );
-}
-
-function LogoMark({ className = "h-6 w-6" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} fill="none" aria-hidden>
-      <defs>
-        <linearGradient id="onyxGradLogo" x1="0" y1="0" x2="32" y2="32">
-          <stop offset="0%" stopColor="#c9c3ff" />
-          <stop offset="55%" stopColor="#8b7cff" />
-          <stop offset="100%" stopColor="#3d2fa8" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M16 2 L28 9 V23 L16 30 L4 23 V9 Z"
-        fill="url(#onyxGradLogo)"
-        opacity="0.9"
-      />
-      <path
-        d="M16 2 L28 9 L16 16 L4 9 Z"
-        fill="white"
-        opacity="0.25"
-      />
-    </svg>
   );
 }
 
@@ -631,36 +606,6 @@ function FinalCta() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="border-t border-white/10 py-12">
-      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 px-6 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
-          <LogoMark className="h-5 w-5" />
-          <span className={`${display.className} text-sm font-semibold text-white`}>Onyx</span>
-        </div>
-
-        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/50">
-          <a href="#fonctionnalites" className="transition-colors hover:text-white">
-            Fonctionnalités
-          </a>
-          <a href="#tarifs" className="transition-colors hover:text-white">
-            Tarifs
-          </a>
-          <Link href="/connexion" className="transition-colors hover:text-white">
-            Connexion
-          </Link>
-          <Link href="/inscription" className="transition-colors hover:text-white">
-            Créer un compte
-          </Link>
-        </nav>
-
-        <p className="text-xs text-white/30">© 2026 Onyx. Tous droits réservés.</p>
-      </div>
-    </footer>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Page                                                                 */
 /* ------------------------------------------------------------------ */
@@ -677,7 +622,7 @@ export function LandingPage() {
         <Pricing />
         <FinalCta />
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }
