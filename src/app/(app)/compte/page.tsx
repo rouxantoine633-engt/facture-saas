@@ -7,9 +7,14 @@ import { SubscribeButton } from "@/components/SubscribeButton";
 import { hasActiveAccess, SUBSCRIPTION_STATUS_LABELS } from "@/lib/subscription";
 import { formatDate } from "@/lib/labels";
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ abonnement?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id || !session.user.email) redirect("/connexion");
+  const { abonnement } = await searchParams;
 
   const company = await prisma.company.findUnique({
     where: { ownerId: session.user.id },
@@ -24,6 +29,18 @@ export default async function AccountPage() {
       <p className="mb-6 text-gray-600">
         Conformément au RGPD, vous pouvez récupérer une copie de toutes vos données ou supprimer votre compte.
       </p>
+
+      {abonnement === "requis" && !isActive && (
+        <p role="alert" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          Un abonnement actif est nécessaire pour accéder à cette fonctionnalité.
+        </p>
+      )}
+      {abonnement === "succes" && (
+        <p role="status" className="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">
+          Merci ! Votre abonnement est en cours d'activation — le statut ci-dessous se met à jour automatiquement
+          dans les prochaines secondes.
+        </p>
+      )}
 
       <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
         <h2 className="font-semibold">Abonnement</h2>

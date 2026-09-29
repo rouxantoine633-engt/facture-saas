@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { QuoteForm } from "@/components/QuoteForm";
 import { createQuoteAction } from "../actions";
 
 export default async function NewQuotePage() {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const clients = await prisma.client.findMany({
     where: { companyId: company.id },
     orderBy: { name: "asc" },

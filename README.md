@@ -131,6 +131,15 @@ local, avant et après la migration Next 16 :
   qu'un abonnement actif existe. Non testé avec de vraies clés Stripe ni
   un vrai paiement (voir point de conformité dédié) : aucune clé, live ou
   test, n'a été fournie ni utilisée pendant le développement.
+- **Verrouillage des fonctionnalités payantes (2026-09-29, suite)** :
+  entreprise de test sans abonnement (`subscriptionStatus: NONE`) — les six
+  surfaces payantes (`/tableau-de-bord`, `/clients`, `/factures`, `/avoirs`,
+  `/export`, `/devis/nouveau`) redirigent toutes vers
+  `/compte?abonnement=requis` avec le bandeau explicatif, y compris une
+  route PDF (`/factures/[id]/pdf`, un *route handler*, pas juste une page).
+  `/entreprise/configuration` reste bien accessible. Après passage de
+  l'entreprise en `ACTIVE` directement en base (simulant le webhook), les
+  mêmes six pages redeviennent accessibles sans reconnexion nécessaire.
 - **Export comptable** : contenu du CSV vérifié directement (pas seulement
   téléchargé) — BOM UTF-8 présent dans les octets réels, montants en
   virgule décimale, avoir exporté en négatif avec référence à la facture
@@ -229,10 +238,21 @@ npm run smoke:stripe
       seule source de vérité du statut d'abonnement (`Company.subscriptionStatus`),
       synchronisé depuis `checkout.session.completed` et
       `customer.subscription.created/updated/deleted`, vérification de
-      signature obligatoire. **Toujours hors périmètre** : aucune
-      fonctionnalité verrouillée derrière l'abonnement, pas de gestion des
-      échecs de paiement au-delà du statut brut, pas de portail de gestion
-      de l'abonnement — voir le point de conformité dédié ci-dessous
+      signature obligatoire
+- [x] Verrouillage des fonctionnalités payantes (`requireActiveCompany` dans
+      `src/lib/session.ts`) : clients, devis, factures, avoirs, export
+      comptable et tableau de bord exigent un abonnement actif (`ACTIVE`,
+      `TRIALING`, ou `PAST_DUE` — Stripe retente le paiement avant
+      d'annuler), sinon redirection vers `/compte?abonnement=requis` avec un
+      message explicite. Restent volontairement libres, à l'inverse : le
+      profil entreprise (à configurer avant de pouvoir payer), `/compte`
+      (bouton d'abonnement + droits RGPD) et la route de facturation Stripe
+      elle-même — sans quoi un utilisateur non abonné ne pourrait jamais
+      s'abonner ni exercer ses droits RGPD. Couvre aussi bien les pages que
+      les *server actions* et les *route handlers* (PDF, export CSV).
+      **Toujours hors périmètre** : pas de gestion des échecs de paiement
+      au-delà du statut brut Stripe, pas de portail de gestion de
+      l'abonnement — voir le point de conformité dédié ci-dessous
 
 ## Principes de conformité appliqués
 
@@ -325,21 +345,25 @@ un expert-comptable et/ou un juriste avant mise en production :
     Brevo (et l'hébergeur base de données), et procédure documentée pour une
     demande d'accès/rectification reçue autrement que via `/compte`.
 16. **Abonnement Stripe (2026-09-29, mis à jour 2026-09-29)** : le webhook
-    (`/api/stripe/webhook`) écoute désormais `checkout.session.completed` et
-    `customer.subscription.created/updated/deleted`, et synchronise
-    `Company.subscriptionStatus`/`subscriptionCurrentPeriodEnd` — vérifié de
-    bout en bout avec un événement Stripe signé localement (`npm run
-    smoke:stripe`), y compris le rejet d'une signature invalide et la
-    gestion propre d'un client Stripe inconnu. **Ce qui reste hors périmètre** :
-    aucune fonctionnalité n'est encore restreinte aux non-abonnés (le statut
-    est stocké et affiché sur `/compte`, mais rien ne bloque l'accès pour un
-    statut `NONE`/`CANCELED`/`UNPAID`) ; pas de gestion des échecs de paiement
-    au-delà du statut brut Stripe (pas d'email de relance de paiement propre
-    à l'app) ; pas de bouton pour gérer/résilier l'abonnement depuis l'app
-    (passage par le Customer Portal Stripe ou une page dédiée à prévoir) ;
-    les CGV mentionnant Stripe comme sous-traitant et la question de la TVA
-    sur les frais d'abonnement (distincte de la TVA facturée par
-    l'utilisateur à ses propres clients) restent à traiter avec un juriste.
+    (`/api/stripe/webhook`) écoute `checkout.session.completed` et
+    `customer.subscription.created/updated/deleted`, synchronise
+    `Company.subscriptionStatus`/`subscriptionCurrentPeriodEnd`, et les
+    fonctionnalités payantes (clients, devis, factures, avoirs, export,
+    tableau de bord) sont désormais verrouillées derrière un abonnement
+    actif (`requireActiveCompany`, vérifié en navigateur : accès refusé et
+    redirigé sans abonnement, débloqué immédiatement après activation en
+    base, y compris sur les routes PDF). **Ce qui reste hors périmètre** :
+    pas de gestion des échecs de paiement au-delà du statut brut Stripe (pas
+    d'email de relance de paiement propre à l'app — Stripe envoie les siens
+    par défaut, à vérifier/personnaliser) ; pas de bouton pour gérer/résilier
+    l'abonnement depuis l'app (passage par le Customer Portal Stripe ou une
+    page dédiée à prévoir) ; pas de période de grâce ni d'export de données
+    forcé avant coupure d'accès en cas d'impayé prolongé (`UNPAID`/`CANCELED`)
+    — à trancher avec un juriste au regard du droit de la consommation
+    (loyauté de l'accès aux propres données du client) ; les CGV mentionnant
+    Stripe comme sous-traitant et la question de la TVA sur les frais
+    d'abonnement (distincte de la TVA facturée par l'utilisateur à ses
+    propres clients) restent à traiter avec un juriste.
     Développement et tests à faire avec des clés Stripe de **test**
     (`pk_test_`/`sk_test_`) ; les clés live ne doivent être saisies que
     directement dans les variables d'environnement de production, jamais

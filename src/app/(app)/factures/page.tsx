@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
 import { displayInvoiceStatus, formatDate, INVOICE_STATUS_LABELS } from "@/lib/labels";
 
 export default async function InvoicesPage() {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const invoices = await prisma.invoice.findMany({
     where: { companyId: company.id },
     include: { client: { select: { name: true } } },

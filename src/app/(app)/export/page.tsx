@@ -1,7 +1,7 @@
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 
 export default async function ExportPage() {
-  await requireCompany();
+  await requireActiveCompany();
   const now = new Date();
   const from = `${now.getUTCFullYear()}-01-01`;
   const to = now.toISOString().slice(0, 10);

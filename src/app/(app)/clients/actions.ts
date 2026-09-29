@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { clientSchema } from "@/lib/validation/client";
 
 export interface ClientFormState {
@@ -14,7 +14,7 @@ export async function createClientAction(
   _prev: ClientFormState,
   formData: FormData
 ): Promise<ClientFormState> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   const parsed = clientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {

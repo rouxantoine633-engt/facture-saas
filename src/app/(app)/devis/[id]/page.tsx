@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { formatDate, QUOTE_STATUS_LABELS } from "@/lib/labels";
 import { LinesTable } from "@/components/LinesTable";
 import { ActionButton } from "@/components/ActionButton";
@@ -11,7 +11,7 @@ import { QuoteStatusForm } from "./QuoteStatusForm";
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const quote = await prisma.quote.findFirst({
     where: { id: id, companyId: company.id },
     include: { client: true, lines: { orderBy: { position: "asc" } } },

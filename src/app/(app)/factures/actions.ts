@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { deleteDraftInvoice, DocumentError, emitInvoice, recordPayment } from "@/lib/documents";
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { parseDecimalToScaledBigInt, MoneyError } from "@/lib/money";
 
 export interface ActionResult {
@@ -25,7 +25,7 @@ async function run(fn: () => Promise<unknown>): Promise<ActionResult> {
 }
 
 export async function emitInvoiceAction(invoiceId: string): Promise<ActionResult> {
-  const { company, userId } = await requireCompany();
+  const { company, userId } = await requireActiveCompany();
   const result = await run(() => emitInvoice({ companyId: company.id, invoiceId, userId }));
   if (result.error) return result;
   revalidatePath("/factures");
@@ -34,7 +34,7 @@ export async function emitInvoiceAction(invoiceId: string): Promise<ActionResult
 }
 
 export async function deleteDraftInvoiceAction(invoiceId: string): Promise<ActionResult> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const result = await run(() => deleteDraftInvoice({ companyId: company.id, invoiceId }));
   if (result.error) return result;
   revalidatePath("/factures");
@@ -53,7 +53,7 @@ export interface RecordPaymentInput {
 }
 
 export async function recordPaymentAction(input: RecordPaymentInput): Promise<ActionResult> {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
 
   if (!PAYMENT_METHODS.includes(input.method as (typeof PAYMENT_METHODS)[number])) {
     return { error: "Moyen de paiement invalide." };

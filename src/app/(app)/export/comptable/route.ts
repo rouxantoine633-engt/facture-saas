@@ -1,4 +1,4 @@
-import { requireCompany } from "@/lib/session";
+import { requireActiveCompany } from "@/lib/session";
 import { toCsv } from "@/lib/export/csv";
 import { loadPaymentsJournal, loadSalesJournal } from "@/lib/export/load";
 import { parseExportRange } from "@/lib/export/range";
@@ -6,7 +6,7 @@ import { parseExportRange } from "@/lib/export/range";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const { company } = await requireCompany();
+  const { company } = await requireActiveCompany();
   const params = new URL(request.url).searchParams;
 
   const range = parseExportRange(params.get("from"), params.get("to"));
