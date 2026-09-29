@@ -8,6 +8,7 @@
 - **@react-pdf/renderer** — génération PDF côté serveur
 - **Vitest** — tests unitaires (priorité absolue : calculs financiers)
 - **Tailwind CSS** — UI, accessibilité WCAG AA
+- **Stripe Checkout** — abonnement SaaS mensuel
 
 ## État de la vérification (première exécution réelle)
 
@@ -115,6 +116,11 @@ local, avant et après la migration Next 16 :
   sur un devis créé pour l'occasion — le bouton « Convertir en facture »
   disparaît bien dès qu'il est refusé. Sur un devis déjà converti, le
   sélecteur de statut n'apparaît plus du tout.
+- **Abonnement Stripe (2026-09-29)** : sans `STRIPE_SECRET_KEY` configurée,
+  le bouton affiche « Le paiement n'est pas encore configuré sur ce
+  service » (500 propre, sans stack trace ni crash). Non testé avec de
+  vraies clés Stripe (voir point de conformité dédié) : aucune clé,
+  live ou test, n'a été fournie ni utilisée pendant le développement.
 - **Export comptable** : contenu du CSV vérifié directement (pas seulement
   téléchargé) — BOM UTF-8 présent dans les octets réels, montants en
   virgule décimale, avoir exporté en négatif avec référence à la facture
@@ -196,6 +202,13 @@ npm test
       en négatif, ventilation TVA par taux) et encaissements, en CSV Excel-FR
       (UTF-8 BOM, `;`, virgule décimale) avec protection contre l'injection de
       formules ; clients repris des mentions figées à l'émission
+- [x] Abonnement SaaS (`src/lib/stripe.ts`, `/api/stripe/checkout`,
+      `SubscribeButton` sur `/compte`) : session Stripe Checkout (mode
+      abonnement, 39 €/mois, prix créé à la volée — aucun objet Price à
+      préconfigurer dans le dashboard Stripe), redirection côté client.
+      **Périmètre volontairement limité à la demande initiale** : ni webhook,
+      ni statut d'abonnement stocké en base, ni fonctionnalité verrouillée
+      derrière l'abonnement — voir le point de conformité dédié ci-dessous
 
 ## Principes de conformité appliqués
 
@@ -287,6 +300,21 @@ un expert-comptable et/ou un juriste avant mise en production :
     légale de traitement par finalité, registre des traitements, DPA avec
     Brevo (et l'hébergeur base de données), et procédure documentée pour une
     demande d'accès/rectification reçue autrement que via `/compte`.
+16. **Abonnement Stripe (2026-09-29)** : périmètre strictement limité à ce qui
+    a été demandé — créer la session Checkout et rediriger. **Aucun webhook**
+    n'écoute `checkout.session.completed` / `customer.subscription.*` : le
+    paiement Stripe réussit, mais rien dans la base ne sait qu'un utilisateur
+    est abonné, et aucune fonctionnalité n'est restreinte aux non-abonnés.
+    Avant un vrai lancement commercial, il faudra : un endpoint webhook
+    (`STRIPE_WEBHOOK_SECRET`, vérification de signature), un champ
+    `stripeCustomerId`/statut d'abonnement sur `Company`, une politique de
+    gestion des échecs de paiement/annulations, les CGV mentionnant Stripe
+    comme sous-traitant, et la question de la TVA sur les frais d'abonnement
+    eux-mêmes (distincte de la TVA facturée aux clients de l'utilisateur).
+    Développement et tests à faire avec des clés Stripe de **test**
+    (`pk_test_`/`sk_test_`) ; les clés live ne doivent être saisies que
+    directement dans les variables d'environnement de production, jamais
+    dans un fichier du dépôt ni collées dans un outil tiers.
 6. **Exactitude des mentions selon la forme juridique** : le logiciel
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations
