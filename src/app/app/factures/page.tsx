@@ -2,22 +2,58 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
-import { displayInvoiceStatus, formatDate, INVOICE_STATUS_LABELS } from "@/lib/labels";
+import { displayInvoiceStatus, formatDate } from "@/lib/labels";
+import { InvoiceStatusBadge } from "@/components/InvoiceStatusBadge";
+import { ReminderButton } from "@/components/ReminderButton";
+import { sendInvoiceReminderAction } from "./actions";
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
   const { company } = await requireActiveCompany();
-  const invoices = await prisma.invoice.findMany({
+  const { filter } = await searchParams;
+  const onlyUnpaid = filter === "impayes";
+
+  const allInvoices = await prisma.invoice.findMany({
     where: { companyId: company.id },
     include: { client: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
   });
 
+  const withStatus = allInvoices.map((inv) => ({ ...inv, displayStatus: displayInvoiceStatus(inv) }));
+  const invoices = onlyUnpaid
+    ? withStatus.filter((inv) => inv.displayStatus === "SENT" || inv.displayStatus === "PARTIALLY_PAID" || inv.displayStatus === "OVERDUE")
+    : withStatus;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="mb-6 text-2xl font-bold">Factures</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">Factures</h1>
+        <nav aria-label="Filtrer les factures" className="flex gap-2 text-sm">
+          <Link
+            href="/app/factures"
+            className={`rounded-full border px-3 py-1.5 font-medium ${
+              !onlyUnpaid ? "border-brand-600 bg-brand-50 text-brand-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Toutes
+          </Link>
+          <Link
+            href="/app/factures?filter=impayes"
+            className={`rounded-full border px-3 py-1.5 font-medium ${
+              onlyUnpaid ? "border-red-300 bg-red-50 text-red-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Impayées
+          </Link>
+        </nav>
+      </div>
+
       {invoices.length === 0 ? (
         <p className="text-gray-600">
-          Aucune facture. Créez un devis puis convertissez-le en facture en un clic.
+          {onlyUnpaid ? "Aucune facture impayée : tout est à jour." : "Aucune facture. Créez un devis puis convertissez-le en facture en un clic."}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -30,27 +66,30 @@ export default async function InvoicesPage() {
                 <th scope="col" className="p-3">Échéance</th>
                 <th scope="col" className="p-3">Statut</th>
                 <th scope="col" className="p-3 text-right">Total TTC</th>
+                <th scope="col" className="p-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {invoices.map((inv) => {
-                const status = displayInvoiceStatus(inv);
-                return (
-                  <tr key={inv.id}>
-                    <td className="p-3">
-                      <Link href={`/app/factures/${inv.id}`} className="font-medium text-brand-700 underline">
-                        {inv.status === "DRAFT" ? "Brouillon" : inv.number}
-                      </Link>
-                    </td>
-                    <td className="p-3">{inv.client.name}</td>
-                    <td className="p-3">{formatDate(inv.dueDate)}</td>
-                    <td className={`p-3 ${status === "OVERDUE" ? "font-medium text-red-700" : ""}`}>
-                      {INVOICE_STATUS_LABELS[status]}
-                    </td>
-                    <td className="p-3 text-right">{formatCentsToEuros(inv.totalTtcCents)}</td>
-                  </tr>
-                );
-              })}
+              {invoices.map((inv) => (
+                <tr key={inv.id}>
+                  <td className="p-3">
+                    <Link href={`/app/factures/${inv.id}`} className="font-medium text-brand-700 underline">
+                      {inv.status === "DRAFT" ? "Brouillon" : inv.number}
+                    </Link>
+                  </td>
+                  <td className="p-3">{inv.client.name}</td>
+                  <td className="p-3">{formatDate(inv.dueDate)}</td>
+                  <td className="p-3">
+                    <InvoiceStatusBadge status={inv.displayStatus} />
+                  </td>
+                  <td className="p-3 text-right">{formatCentsToEuros(inv.totalTtcCents)}</td>
+                  <td className="p-3 text-right">
+                    {inv.displayStatus === "OVERDUE" && (
+                      <ReminderButton action={sendInvoiceReminderAction.bind(null, inv.id)} />
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

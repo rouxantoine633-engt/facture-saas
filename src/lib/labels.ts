@@ -30,6 +30,21 @@ export function displayInvoiceStatus(
   return unpaid && isOverdue(invoice.dueDate, now) ? "OVERDUE" : invoice.status;
 }
 
+export type StatusTone = "good" | "warning" | "critical" | "neutral";
+
+/**
+ * Regroupement visuel des statuts de facture en 3 familles lisibles au premier coup
+ * d'œil (Payée / En attente / En retard), plus les états neutres (brouillon, annulée).
+ */
+export const INVOICE_STATUS_TONE: Record<InvoiceStatus, StatusTone> = {
+  DRAFT: "neutral",
+  SENT: "warning",
+  PARTIALLY_PAID: "warning",
+  PAID: "good",
+  OVERDUE: "critical",
+  CANCELLED_BY_CREDIT_NOTE: "neutral",
+};
+
 export function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC" }).format(date);
 }
