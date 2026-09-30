@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { deleteDraftInvoice, DocumentError, emitInvoice, recordPayment } from "@/lib/documents";
 import { requireActiveCompany } from "@/lib/session";
 import { parseDecimalToScaledBigInt, MoneyError } from "@/lib/money";
+import { ReminderError, sendManualInvoiceReminder } from "@/lib/reminder-job";
+import { EmailError } from "@/lib/email/brevo";
 
 export interface ActionResult {
   error?: string;
@@ -84,5 +86,19 @@ export async function recordPaymentAction(input: RecordPaymentInput): Promise<Ac
   if (result.error) return result;
   revalidatePath("/app/factures");
   revalidatePath(`/app/factures/${input.invoiceId}`);
+  return {};
+}
+
+export async function sendInvoiceReminderAction(invoiceId: string): Promise<ActionResult> {
+  const { company, userId } = await requireActiveCompany();
+  try {
+    await sendManualInvoiceReminder({ companyId: company.id, invoiceId, userId });
+  } catch (e) {
+    if (e instanceof ReminderError || e instanceof EmailError) return { error: e.message };
+    throw e;
+  }
+  revalidatePath("/app/factures");
+  revalidatePath(`/app/factures/${invoiceId}`);
+  revalidatePath("/app/tableau-de-bord");
   return {};
 }

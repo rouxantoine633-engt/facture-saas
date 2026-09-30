@@ -6,7 +6,6 @@ import { formatCentsToEuros } from "@/lib/money";
 import {
   displayInvoiceStatus,
   formatDate,
-  INVOICE_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   REMINDER_STATUS_LABELS,
 } from "@/lib/labels";
@@ -15,7 +14,9 @@ import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/docume
 import { vatMention, type BuyerSnapshot, type SellerSnapshot } from "@/lib/invoice-compliance";
 import { LinesTable } from "@/components/LinesTable";
 import { ActionButton } from "@/components/ActionButton";
-import { deleteDraftInvoiceAction, emitInvoiceAction } from "../actions";
+import { InvoiceStatusBadge } from "@/components/InvoiceStatusBadge";
+import { ReminderButton } from "@/components/ReminderButton";
+import { deleteDraftInvoiceAction, emitInvoiceAction, sendInvoiceReminderAction } from "../actions";
 import { PayForm } from "./PayForm";
 import { SendEmailForm } from "@/components/SendEmailForm";
 
@@ -61,9 +62,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="text-2xl font-bold">{isDraft ? "Facture (brouillon)" : `Facture ${invoice.number}`}</h1>
-      <p className={`mt-1 ${status === "OVERDUE" ? "font-medium text-red-700" : "text-gray-600"}`}>
-        {INVOICE_STATUS_LABELS[status]} · émise le {formatDate(invoice.issueDate)} · échéance le {formatDate(invoice.dueDate)}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+        <InvoiceStatusBadge status={status} />
+        <span>
+          émise le {formatDate(invoice.issueDate)} · échéance le {formatDate(invoice.dueDate)}
+        </span>
+      </div>
       {invoice.originQuoteNumber && invoice.originQuoteDate && (
         <p className="mt-1 text-sm text-gray-600">
           Suite au devis {invoice.originQuoteNumber} du {formatDate(invoice.originQuoteDate)}
@@ -146,6 +150,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         )}
         {!isDraft && (
           <SendEmailForm kind="INVOICE" documentId={invoice.id} defaultTo={invoice.client.email ?? ""} lastSent={lastSent} />
+        )}
+        {status === "OVERDUE" && remainingCents > 0 && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-800">
+              Cette facture est en retard de paiement — reste dû {formatCentsToEuros(remainingCents)}.
+            </p>
+            <div className="mt-2">
+              <ReminderButton action={sendInvoiceReminderAction.bind(null, invoice.id)} />
+            </div>
+          </div>
         )}
         {invoice.payments.length > 0 && (
           <section aria-labelledby="paiements" className="text-sm">

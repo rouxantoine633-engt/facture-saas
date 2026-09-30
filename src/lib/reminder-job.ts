@@ -1,9 +1,10 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { startOfUtcDay } from "@/lib/dates";
-import { formatDate } from "@/lib/labels";
+import { daysOverdue, startOfUtcDay } from "@/lib/dates";
+import { displayInvoiceStatus, formatDate } from "@/lib/labels";
 import { EmailError, sendEmail } from "@/lib/email/brevo";
 import { buildReminderEmail } from "@/lib/email/templates";
+import { DAILY_EMAIL_LIMIT } from "@/lib/email/send-document";
 import { loadInvoicePdf } from "@/lib/pdf/load";
 import { formatEurosForPdf } from "@/lib/pdf/format";
 import { renderPdfBuffer } from "@/lib/pdf/render";
@@ -12,6 +13,8 @@ import { isFirmReminder, planReminders, type ExistingReminder } from "@/lib/remi
 
 const MAX_INVOICES_PER_RUN = 200;
 const STALE_PENDING_MS = 60 * 60 * 1000;
+
+export class ReminderError extends Error {}
 
 export interface ReminderJobSummary {
   markedOverdue: number;
@@ -76,7 +79,7 @@ export async function runReminderJob(now: Date = new Date()): Promise<ReminderJo
     if (!claimed) continue;
 
     try {
-      await sendReminder(invoice, plan.toSend);
+      await deliverReminderEmail(invoice, plan.toSend, isFirmReminder(plan.toSend, invoice.company.reminderOffsetsDays));
       await prisma.reminder.update({
         where: { invoiceId_offsetDays: { invoiceId: invoice.id, offsetDays: plan.toSend } },
         data: { status: "SENT", sentAt: new Date() },
@@ -119,7 +122,8 @@ type InvoiceForReminder = Prisma.InvoiceGetPayload<{
   include: { company: true; client: true; payments: true; reminders: true; creditNotes: true };
 }>;
 
-async function sendReminder(invoice: InvoiceForReminder, offsetDays: number): Promise<void> {
+/** Construit et envoie l'email de relance (utilisé par la tâche automatique et la relance manuelle). */
+async function deliverReminderEmail(invoice: InvoiceForReminder, offsetDays: number, firm: boolean): Promise<void> {
   const { company, client } = invoice;
   const remaining = stillDue(invoice);
 
@@ -132,7 +136,7 @@ async function sendReminder(invoice: InvoiceForReminder, offsetDays: number): Pr
     number: invoice.number,
     amountDueLabel: formatEurosForPdf(remaining),
     dueDateLabel: formatDate(invoice.dueDate),
-    firm: isFirmReminder(offsetDays, company.reminderOffsetsDays),
+    firm,
     businessClient: client.type === "BUSINESS",
     recoveryIndemnityLabel: formatEurosForPdf(company.recoveryIndemnityCents),
   });
@@ -146,6 +150,68 @@ async function sendReminder(invoice: InvoiceForReminder, offsetDays: number): Pr
     replyTo: { email: company.email, name: company.legalName },
     attachments: [{ name: loaded.filename, content: await renderPdfBuffer(loaded.data) }],
   });
+}
+
+/**
+ * Relance manuelle immédiate déclenchée par l'utilisateur depuis l'application
+ * (bouton « Relancer »), indépendante des paliers programmés de l'entreprise.
+ * Réutilise le même modèle Reminder que la tâche automatique : le palier envoyé
+ * ici (jours de retard réels) empêche la tâche quotidienne de renvoyer une
+ * relance sur un palier déjà couvert.
+ */
+export async function sendManualInvoiceReminder(params: {
+  companyId: string;
+  invoiceId: string;
+  userId: string;
+  now?: Date;
+}): Promise<void> {
+  const now = params.now ?? new Date();
+
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const sentToday = await prisma.auditLog.count({
+    where: { companyId: params.companyId, action: { startsWith: "email." }, createdAt: { gte: since } },
+  });
+  if (sentToday >= DAILY_EMAIL_LIMIT) {
+    throw new ReminderError(`Limite de ${DAILY_EMAIL_LIMIT} emails par jour atteinte. Réessayez demain.`);
+  }
+
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: params.invoiceId, companyId: params.companyId },
+    include: { company: true, client: true, payments: true, reminders: true, creditNotes: true },
+  });
+  if (!invoice) throw new ReminderError("Facture introuvable.");
+  if (displayInvoiceStatus(invoice, now) !== "OVERDUE") {
+    throw new ReminderError("La relance n'est disponible que pour une facture en retard de paiement.");
+  }
+  if (!invoice.client.email) {
+    throw new ReminderError("Ce client n'a pas d'adresse email enregistrée.");
+  }
+  if (stillDue(invoice) <= 0) {
+    throw new ReminderError("Cette facture est déjà soldée.");
+  }
+
+  const offsetDays = daysOverdue(invoice.dueDate, now);
+  const firm = invoice.reminders.some((r) => r.status === "SENT");
+
+  await deliverReminderEmail(invoice, offsetDays, firm);
+
+  await prisma.$transaction([
+    prisma.reminder.upsert({
+      where: { invoiceId_offsetDays: { invoiceId: invoice.id, offsetDays } },
+      create: { invoiceId: invoice.id, offsetDays, scheduledFor: now, status: "SENT", sentAt: now },
+      update: { status: "SENT", sentAt: now },
+    }),
+    prisma.auditLog.create({
+      data: {
+        companyId: params.companyId,
+        userId: params.userId,
+        action: "email.reminder_sent_manual",
+        entityType: "Invoice",
+        entityId: invoice.id,
+        metadata: { to: invoice.client.email, number: invoice.number },
+      },
+    }),
+  ]);
 }
 
 function stillDue(invoice: InvoiceForReminder): number {
