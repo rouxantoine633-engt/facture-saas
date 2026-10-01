@@ -246,6 +246,11 @@ export async function emitInvoice(params: { companyId: string; invoiceId: string
 
     const seller = sellerSnapshotFromCompany(invoice.company);
     const buyer = buyerSnapshotFromClient(invoice.client);
+    // L'indemnité forfaitaire de recouvrement (art. L441-10 du code de
+    // commerce) n'existe qu'entre professionnels : interdite envers un
+    // consommateur, elle est donc exclue à la source pour les clients B2C,
+    // plutôt que simplement masquée à l'affichage.
+    const recoveryIndemnityCents = buyer.type === "BUSINESS" ? invoice.company.recoveryIndemnityCents : 0;
     const problems = validateInvoiceForEmission({
       seller,
       buyer,
@@ -253,7 +258,7 @@ export async function emitInvoice(params: { companyId: string; invoiceId: string
       dueDate: invoice.dueDate,
       lines,
       latePenaltyRateText: invoice.company.latePenaltyRateText,
-      recoveryIndemnityCents: invoice.company.recoveryIndemnityCents,
+      recoveryIndemnityCents,
       discountPolicyText: invoice.company.discountPolicyText,
     });
     if (problems.length > 0) {
@@ -284,7 +289,7 @@ export async function emitInvoice(params: { companyId: string; invoiceId: string
         sellerLegalSnapshot: seller as unknown as Prisma.InputJsonValue,
         buyerLegalSnapshot: buyer as unknown as Prisma.InputJsonValue,
         latePenaltyRateText: invoice.company.latePenaltyRateText,
-        recoveryIndemnityCents: invoice.company.recoveryIndemnityCents,
+        recoveryIndemnityCents,
         discountPolicyText: invoice.company.discountPolicyText,
       },
     });
