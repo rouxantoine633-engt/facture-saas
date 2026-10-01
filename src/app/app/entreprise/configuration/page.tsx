@@ -4,9 +4,16 @@ import { getCompanyAction } from "./actions";
 import { CompanySettings } from "./CompanySettings";
 import type { CompanyInput } from "@/lib/validation/company";
 
-export default async function CompanyConfigurationPage() {
+export default async function CompanyConfigurationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ onboarding?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) redirect("/connexion");
+
+  const { onboarding } = await searchParams;
+  const isOnboarding = onboarding === "1";
 
   const company = await getCompanyAction();
 
@@ -43,10 +50,11 @@ export default async function CompanyConfigurationPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-2 text-2xl font-bold">Profil de l'entreprise</h1>
       <p className="mb-8 text-gray-600">
-        Ces informations apparaîtront automatiquement sur tous tes devis et
-        factures. Elles ne sont demandées qu'une seule fois.
+        {isOnboarding
+          ? "Dernière étape avant le paiement : ces informations apparaîtront automatiquement sur tous tes devis et factures."
+          : "Ces informations apparaîtront automatiquement sur tous tes devis et factures. Elles ne sont demandées qu'une seule fois."}
       </p>
-      <CompanySettings defaultValues={defaultValues} />
+      <CompanySettings defaultValues={defaultValues} onboarding={isOnboarding} />
     </div>
   );
 }
