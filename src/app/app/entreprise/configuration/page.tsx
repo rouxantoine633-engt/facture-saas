@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getCompanyAction } from "./actions";
-import { CompanyForm } from "./CompanyForm";
+import { CompanySettings } from "./CompanySettings";
 import type { CompanyInput } from "@/lib/validation/company";
 
 export default async function CompanyConfigurationPage() {
@@ -46,7 +46,7 @@ export default async function CompanyConfigurationPage() {
         Ces informations apparaîtront automatiquement sur tous tes devis et
         factures. Elles ne sont demandées qu'une seule fois.
       </p>
-      <CompanyForm defaultValues={defaultValues} />
+      <CompanySettings defaultValues={defaultValues} />
     </div>
   );
 }
