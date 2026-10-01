@@ -16,11 +16,14 @@ const LEGAL_FORMS_WITH_RCS = new Set(["EURL", "SARL", "SASU", "SAS"]);
 
 export function CompanySettings({
   defaultValues,
+  onboarding = false,
 }: {
   defaultValues: Partial<CompanyInput>;
+  onboarding?: boolean;
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -50,7 +53,33 @@ export function CompanySettings({
       setServerError(result.error);
       return;
     }
-    setSaved(true);
+
+    if (!onboarding) {
+      setSaved(true);
+      return;
+    }
+
+    // Parcours d'inscription : on enchaîne directement sur le paiement Stripe
+    // plutôt que de laisser l'utilisateur sur ce formulaire.
+    setRedirecting(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const checkout = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
+      if (!res.ok || !checkout?.url) {
+        setServerError(
+          checkout?.error ??
+            "Profil enregistré, mais le paiement n'a pas pu démarrer. Réessaie depuis « Mes données »."
+        );
+        setRedirecting(false);
+        return;
+      }
+      window.location.href = checkout.url;
+    } catch {
+      setServerError(
+        "Profil enregistré, mais le paiement n'a pas pu démarrer. Réessaie depuis « Mes données »."
+      );
+      setRedirecting(false);
+    }
   }
 
   return (
@@ -230,10 +259,16 @@ export function CompanySettings({
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || redirecting}
         className="rounded-md bg-brand-600 px-6 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
-        {isSubmitting ? "Enregistrement…" : "Enregistrer le profil"}
+        {isSubmitting
+          ? "Enregistrement…"
+          : redirecting
+            ? "Redirection vers le paiement…"
+            : onboarding
+              ? "Continuer vers le paiement"
+              : "Enregistrer le profil"}
       </button>
     </form>
   );

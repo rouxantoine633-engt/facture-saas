@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useFormState, useFormStatus } from "react-dom";
 import { registerAction, type RegisterFormState } from "./actions";
 
@@ -21,10 +23,12 @@ function SubmitButton() {
 }
 
 export default function InscriptionPage() {
+  const router = useRouter();
   const [state, formAction] = useFormState(registerAction, initialState);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [autoLoginFailed, setAutoLoginFailed] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   // En cas d'erreur, le nom et l'email saisis sont conservés : seul le mot
@@ -37,19 +41,43 @@ export default function InscriptionPage() {
     }
   }, [state]);
 
+  // Compte créé : connexion automatique puis enchaînement direct sur la
+  // configuration de l'entreprise, sans repasser par l'écran de connexion.
+  useEffect(() => {
+    if (!state.success) return;
+    let cancelled = false;
+    (async () => {
+      const result = await signIn("credentials", { email, password, redirect: false });
+      if (cancelled) return;
+      if (result?.error) {
+        setAutoLoginFailed(true);
+        return;
+      }
+      router.push("/app/entreprise/configuration?onboarding=1");
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success]);
+
   if (state.success) {
     return (
       <div className="mx-auto mt-24 max-w-sm text-center">
         <h1 className="text-xl font-semibold">Compte créé !</h1>
         <p className="mt-2 text-gray-600">
-          Tu peux maintenant te connecter.
+          {autoLoginFailed
+            ? "Connecte-toi pour continuer la configuration de ton entreprise."
+            : "Connexion en cours…"}
         </p>
-        <Link
-          href="/connexion"
-          className="mt-4 inline-block text-brand-600 underline"
-        >
-          Aller à la connexion
-        </Link>
+        {autoLoginFailed && (
+          <Link
+            href="/connexion"
+            className="mt-4 inline-block text-brand-600 underline"
+          >
+            Aller à la connexion
+          </Link>
+        )}
       </div>
     );
   }
