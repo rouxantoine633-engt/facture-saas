@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 import { registerAction, type RegisterFormState } from "./actions";
@@ -21,6 +22,20 @@ function SubmitButton() {
 
 export default function InscriptionPage() {
   const [state, formAction] = useFormState(registerAction, initialState);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // En cas d'erreur, le nom et l'email saisis sont conservés : seul le mot
+  // de passe est vidé et signalé, pour permettre de le corriger directement
+  // sans tout ressaisir.
+  useEffect(() => {
+    if (state.error) {
+      setPassword("");
+      passwordRef.current?.focus();
+    }
+  }, [state]);
 
   if (state.success) {
     return (
@@ -53,6 +68,8 @@ export default function InscriptionPage() {
             type="text"
             autoComplete="name"
             required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
           />
         </div>
@@ -66,6 +83,8 @@ export default function InscriptionPage() {
             type="email"
             autoComplete="email"
             required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
           />
         </div>
@@ -74,17 +93,26 @@ export default function InscriptionPage() {
             Mot de passe (10 caractères minimum)
           </label>
           <input
+            ref={passwordRef}
             id="password"
             name="password"
             type="password"
             autoComplete="new-password"
             required
             minLength={10}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={state.error ? true : undefined}
+            aria-describedby={state.error ? "password-error" : undefined}
+            className={`mt-1 w-full rounded-md border px-3 py-2 ${
+              state.error
+                ? "border-red-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                : "border-gray-300"
+            }`}
           />
         </div>
         {state.error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p id="password-error" role="alert" className="text-sm text-red-600">
             {state.error}
           </p>
         )}
