@@ -34,6 +34,16 @@ describe("hasActiveAccess", () => {
     expect(hasActiveAccess("INCOMPLETE_EXPIRED")).toBe(false);
     expect(hasActiveAccess("PAUSED")).toBe(false);
   });
+
+  it("autorise l'accès VIP (démo) même sans abonnement Stripe", () => {
+    expect(hasActiveAccess("NONE", true)).toBe(true);
+    expect(hasActiveAccess("CANCELED", true)).toBe(true);
+  });
+
+  it("isVip à false ne change rien au comportement par défaut", () => {
+    expect(hasActiveAccess("NONE", false)).toBe(false);
+    expect(hasActiveAccess("ACTIVE", false)).toBe(true);
+  });
 });
 
 describe("getSubscriptionPeriodEnd", () => {

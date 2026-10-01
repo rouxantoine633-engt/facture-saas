@@ -211,6 +211,12 @@ model Company {
   subscriptionStatus           SubscriptionStatus @default(NONE)
   subscriptionCurrentPeriodEnd DateTime?
 
+  // Accès VIP (démos commerciales) : contourne le paiement Stripe sans le
+  // simuler. Distinct de subscriptionStatus pour ne jamais interférer avec
+  // le webhook ; activé uniquement via un code secret validé côté serveur
+  // (voir activateVipAccessAction), jamais depuis le client seul.
+  isVipAccess Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

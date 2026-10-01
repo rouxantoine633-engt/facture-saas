@@ -23,7 +23,7 @@ export async function requireCompany() {
  */
 export async function requireActiveCompany() {
   const { userId, company } = await requireCompany();
-  if (!hasActiveAccess(company.subscriptionStatus)) {
+  if (!hasActiveAccess(company.subscriptionStatus, company.isVipAccess)) {
     redirect("/app/compte?abonnement=requis");
   }
   return { userId, company };

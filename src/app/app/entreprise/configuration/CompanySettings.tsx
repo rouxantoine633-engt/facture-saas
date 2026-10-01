@@ -10,7 +10,7 @@ import {
   type CompanyInput,
 } from "@/lib/validation/company";
 import { parseOffsetsInput } from "@/lib/reminders";
-import { saveCompanyAction } from "./actions";
+import { activateVipAccessAction, saveCompanyAction } from "./actions";
 
 const LEGAL_FORMS_WITH_RCS = new Set(["EURL", "SARL", "SASU", "SAS"]);
 
@@ -24,6 +24,7 @@ export function CompanySettings({
   const [serverError, setServerError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [vipCode, setVipCode] = useState("");
 
   const {
     register,
@@ -56,6 +57,19 @@ export function CompanySettings({
 
     if (!onboarding) {
       setSaved(true);
+      return;
+    }
+
+    // Démo commerciale : un code VIP valide contourne complètement Stripe.
+    if (vipCode.trim()) {
+      setRedirecting(true);
+      const vip = await activateVipAccessAction(vipCode.trim());
+      if (vip.error) {
+        setServerError(vip.error);
+        setRedirecting(false);
+        return;
+      }
+      window.location.href = "/app/tableau-de-bord";
       return;
     }
 
@@ -246,6 +260,25 @@ export function CompanySettings({
         </p>
       </section>
 
+      {onboarding && (
+        <section className="space-y-2 border-t border-gray-200 pt-6">
+          <label htmlFor="vipCode" className="block text-xs font-medium text-gray-500">
+            Code d'accès VIP (réservé aux démonstrations commerciales)
+          </label>
+          <input
+            id="vipCode"
+            value={vipCode}
+            onChange={(e) => setVipCode(e.target.value)}
+            autoComplete="off"
+            className="input max-w-xs"
+          />
+          <p className="text-xs text-gray-500">
+            Si tu as reçu un code VIP, renseigne-le ici : le bouton ci-dessous activera directement
+            ton accès, sans passer par le paiement.
+          </p>
+        </section>
+      )}
+
       {serverError && (
         <p role="alert" className="text-sm text-red-600">
           {serverError}
@@ -265,9 +298,13 @@ export function CompanySettings({
         {isSubmitting
           ? "Enregistrement…"
           : redirecting
-            ? "Redirection vers le paiement…"
+            ? vipCode.trim()
+              ? "Activation de l'accès VIP…"
+              : "Redirection vers le paiement…"
             : onboarding
-              ? "Continuer vers le paiement"
+              ? vipCode.trim()
+                ? "Activer l'accès VIP"
+                : "Continuer vers le paiement"
               : "Enregistrer le profil"}
       </button>
     </form>
