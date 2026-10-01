@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { previewAccountDeletion } from "@/lib/gdpr/account";
 import { DeleteAccountForm } from "./DeleteAccountForm";
 import { SubscribeButton } from "@/components/SubscribeButton";
+import { VipAccessForm } from "@/components/VipAccessForm";
 import { hasActiveAccess, SUBSCRIPTION_STATUS_LABELS } from "@/lib/subscription";
 import { formatDate } from "@/lib/labels";
 
@@ -18,10 +19,10 @@ export default async function AccountPage({
 
   const company = await prisma.company.findUnique({
     where: { ownerId: session.user.id },
-    select: { id: true, subscriptionStatus: true, subscriptionCurrentPeriodEnd: true },
+    select: { id: true, subscriptionStatus: true, subscriptionCurrentPeriodEnd: true, isVipAccess: true },
   });
   const preview = company ? await previewAccountDeletion(company.id) : { strategy: "HARD_DELETE" as const };
-  const isActive = company ? hasActiveAccess(company.subscriptionStatus) : false;
+  const isActive = company ? hasActiveAccess(company.subscriptionStatus, company.isVipAccess) : false;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -47,9 +48,11 @@ export default async function AccountPage({
         <p className="mt-1 text-sm">
           Statut :{" "}
           <span className={isActive ? "font-medium text-green-700" : "font-medium text-gray-700"}>
-            {SUBSCRIPTION_STATUS_LABELS[company?.subscriptionStatus ?? "NONE"]}
+            {company?.isVipAccess
+              ? "Accès VIP (démonstration)"
+              : SUBSCRIPTION_STATUS_LABELS[company?.subscriptionStatus ?? "NONE"]}
           </span>
-          {isActive && company?.subscriptionCurrentPeriodEnd && (
+          {isActive && !company?.isVipAccess && company?.subscriptionCurrentPeriodEnd && (
             <> · prochain renouvellement le {formatDate(company.subscriptionCurrentPeriodEnd)}</>
           )}
         </p>
@@ -61,6 +64,7 @@ export default async function AccountPage({
             <div className="mt-3">
               <SubscribeButton />
             </div>
+            <VipAccessForm />
           </>
         )}
       </section>

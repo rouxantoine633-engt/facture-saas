@@ -31,8 +31,9 @@ export function mapStripeSubscriptionStatus(status: Stripe.Subscription.Status):
 /** Statuts donnant droit à l'accès au service. `PAST_DUE` reste inclus : Stripe retente le paiement avant d'annuler. */
 const ACTIVE_STATUSES: ReadonlySet<SubscriptionStatus> = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
 
-export function hasActiveAccess(status: SubscriptionStatus): boolean {
-  return ACTIVE_STATUSES.has(status);
+/** `isVip` (démo commerciale) donne accès indépendamment du statut Stripe. */
+export function hasActiveAccess(status: SubscriptionStatus, isVip = false): boolean {
+  return isVip || ACTIVE_STATUSES.has(status);
 }
 
 /**
