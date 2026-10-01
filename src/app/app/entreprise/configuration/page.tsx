@@ -7,13 +7,14 @@ import type { CompanyInput } from "@/lib/validation/company";
 export default async function CompanyConfigurationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ onboarding?: string }>;
+  searchParams: Promise<{ onboarding?: string; demo?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/connexion");
 
-  const { onboarding } = await searchParams;
+  const { onboarding, demo } = await searchParams;
   const isOnboarding = onboarding === "1";
+  const isDemo = demo === "true";
 
   const company = await getCompanyAction();
 
@@ -54,7 +55,11 @@ export default async function CompanyConfigurationPage({
           ? "Dernière étape avant le paiement : ces informations apparaîtront automatiquement sur tous tes devis et factures."
           : "Ces informations apparaîtront automatiquement sur tous tes devis et factures. Elles ne sont demandées qu'une seule fois."}
       </p>
-      <CompanySettings defaultValues={defaultValues} onboarding={isOnboarding} />
+      <CompanySettings
+        defaultValues={defaultValues}
+        onboarding={isOnboarding}
+        vipFieldVisible={isOnboarding && isDemo}
+      />
     </div>
   );
 }

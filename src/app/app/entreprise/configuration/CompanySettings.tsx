@@ -17,9 +17,12 @@ const LEGAL_FORMS_WITH_RCS = new Set(["EURL", "SARL", "SASU", "SAS"]);
 export function CompanySettings({
   defaultValues,
   onboarding = false,
+  vipFieldVisible = false,
 }: {
   defaultValues: Partial<CompanyInput>;
   onboarding?: boolean;
+  /** Accès caché, réservé aux démos commerciales — jamais affiché sans le paramètre secret. */
+  vipFieldVisible?: boolean;
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -260,7 +263,7 @@ export function CompanySettings({
         </p>
       </section>
 
-      {onboarding && (
+      {vipFieldVisible && (
         <section className="space-y-2 border-t border-gray-200 pt-6">
           <label htmlFor="vipCode" className="block text-xs font-medium text-gray-500">
             Code d'accès VIP (réservé aux démonstrations commerciales)

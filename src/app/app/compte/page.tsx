@@ -11,11 +11,12 @@ import { formatDate } from "@/lib/labels";
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ abonnement?: string }>;
+  searchParams: Promise<{ abonnement?: string; demo?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id || !session.user.email) redirect("/connexion");
-  const { abonnement } = await searchParams;
+  const { abonnement, demo } = await searchParams;
+  const isDemo = demo === "true";
 
   const company = await prisma.company.findUnique({
     where: { ownerId: session.user.id },
@@ -64,7 +65,7 @@ export default async function AccountPage({
             <div className="mt-3">
               <SubscribeButton />
             </div>
-            <VipAccessForm />
+            {isDemo && <VipAccessForm />}
           </>
         )}
       </section>
