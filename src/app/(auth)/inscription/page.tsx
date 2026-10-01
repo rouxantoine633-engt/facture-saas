@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useFormState, useFormStatus } from "react-dom";
-import { registerAction, type RegisterFormState } from "./actions";
+import { registerAction, provisionDemoAccountAction, type RegisterFormState } from "./actions";
 
 const initialState: RegisterFormState = {};
 
@@ -23,7 +23,17 @@ function SubmitButton() {
 }
 
 export default function InscriptionPage() {
+  return (
+    <Suspense>
+      <InscriptionForm />
+    </Suspense>
+  );
+}
+
+function InscriptionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const godmodeCode = searchParams.get("godmode");
   const [state, formAction] = useFormState(registerAction, initialState);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +53,9 @@ export default function InscriptionPage() {
 
   // Compte créé : connexion automatique puis enchaînement direct sur la
   // configuration de l'entreprise, sans repasser par l'écran de connexion.
+  // Démo commerciale (lien secret ?godmode=<code>) : saute entièrement la
+  // configuration et Stripe, avec une entreprise fictive provisionnée pour
+  // l'occasion. Un code absent ou invalide ne change rien au parcours normal.
   useEffect(() => {
     if (!state.success) return;
     let cancelled = false;
@@ -52,6 +65,14 @@ export default function InscriptionPage() {
       if (result?.error) {
         setAutoLoginFailed(true);
         return;
+      }
+      if (godmodeCode) {
+        const demo = await provisionDemoAccountAction(godmodeCode);
+        if (cancelled) return;
+        if (demo.success) {
+          router.push("/app/tableau-de-bord");
+          return;
+        }
       }
       router.push("/app/entreprise/configuration?onboarding=1");
     })();

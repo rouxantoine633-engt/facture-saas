@@ -1,9 +1,9 @@
 "use server";
 
-import { timingSafeEqual } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { companySchema, type CompanyInput } from "@/lib/validation/company";
+import { matchesVipCode } from "@/lib/vip-demo";
 
 export interface SaveCompanyResult {
   error?: string;
@@ -71,14 +71,6 @@ export async function getCompanyAction() {
 export interface VipAccessResult {
   error?: string;
   success?: boolean;
-}
-
-function matchesVipCode(provided: string): boolean {
-  const secret = process.env.VIP_DEMO_CODE;
-  if (!secret || !provided) return false;
-  const providedBuf = Buffer.from(provided);
-  const secretBuf = Buffer.from(secret);
-  return providedBuf.length === secretBuf.length && timingSafeEqual(providedBuf, secretBuf);
 }
 
 /**
