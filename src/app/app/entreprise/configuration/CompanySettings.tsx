@@ -14,7 +14,7 @@ import { saveCompanyAction } from "./actions";
 
 const LEGAL_FORMS_WITH_RCS = new Set(["EURL", "SARL", "SASU", "SAS"]);
 
-export function CompanyForm({
+export function CompanySettings({
   defaultValues,
 }: {
   defaultValues: Partial<CompanyInput>;
