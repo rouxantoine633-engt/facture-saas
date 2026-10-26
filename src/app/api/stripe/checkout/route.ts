@@ -8,6 +8,7 @@ import {
   SUBSCRIPTION_PRICE_CENTS,
   SUBSCRIPTION_PRODUCT_NAME,
 } from "@/lib/stripe";
+import { hasActiveAccess } from "@/lib/subscription";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,10 @@ export async function POST(request: Request) {
   const company = await prisma.company.findUnique({ where: { ownerId: session.user.id } });
   if (!company) {
     return NextResponse.json({ error: "Configurez d'abord le profil de votre entreprise." }, { status: 400 });
+  }
+  // Évite un second paiement si le webhook a déjà activé l'accès (ou en démo VIP).
+  if (hasActiveAccess(company.subscriptionStatus, company.isVipAccess)) {
+    return NextResponse.json({ error: "Vous avez déjà un accès actif au service." }, { status: 409 });
   }
 
   const origin = process.env.AUTH_URL ?? new URL(request.url).origin;
