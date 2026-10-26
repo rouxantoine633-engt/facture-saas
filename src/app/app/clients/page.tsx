@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { ClientForm } from "./ClientForm";
@@ -22,11 +23,21 @@ export default async function ClientsPage() {
           ) : (
             <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
               {clients.map((c) => (
-                <li key={c.id} className="p-3">
-                  <p className="font-medium">{c.name}</p>
-                  <p className="text-sm text-gray-600">
-                    {c.postalCode} {c.city}
-                  </p>
+                <li key={c.id}>
+                  <Link
+                    href={`/app/clients/${c.id}`}
+                    className="flex items-center justify-between gap-3 p-3 hover:bg-gray-50 focus-visible:bg-gray-50"
+                  >
+                    <span>
+                      <span className="block font-medium text-brand-700">{c.name}</span>
+                      <span className="block text-sm text-gray-600">
+                        {c.postalCode} {c.city}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-sm text-gray-500" aria-hidden="true">
+                      Voir / modifier →
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
