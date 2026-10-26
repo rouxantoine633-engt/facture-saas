@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useFormState, useFormStatus } from "react-dom";
+import { readGodmodeCandidates } from "@/lib/godmode-param";
 import { registerAction, provisionDemoAccountAction, type RegisterFormState } from "./actions";
 
 const initialState: RegisterFormState = {};
@@ -23,17 +24,7 @@ function SubmitButton() {
 }
 
 export default function InscriptionPage() {
-  return (
-    <Suspense>
-      <InscriptionForm />
-    </Suspense>
-  );
-}
-
-function InscriptionForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const godmodeCode = searchParams.get("godmode");
   const [state, formAction] = useFormState(registerAction, initialState);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -66,8 +57,8 @@ function InscriptionForm() {
         setAutoLoginFailed(true);
         return;
       }
-      if (godmodeCode) {
-        const demo = await provisionDemoAccountAction(godmodeCode);
+      for (const candidate of readGodmodeCandidates(window.location.search)) {
+        const demo = await provisionDemoAccountAction(candidate);
         if (cancelled) return;
         if (demo.success) {
           router.push("/app/tableau-de-bord");
