@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { previewAccountDeletion } from "@/lib/gdpr/account";
 import { DeleteAccountForm } from "./DeleteAccountForm";
 import { SubscribeButton } from "@/components/SubscribeButton";
+import { SubscriptionStatusRefresher } from "@/components/SubscriptionStatusRefresher";
 import { VipAccessForm } from "@/components/VipAccessForm";
 import { hasActiveAccess, SUBSCRIPTION_STATUS_LABELS } from "@/lib/subscription";
 import { formatDate } from "@/lib/labels";
@@ -39,8 +40,15 @@ export default async function AccountPage({
       )}
       {abonnement === "succes" && (
         <p role="status" className="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">
-          Merci ! Votre abonnement est en cours d'activation — le statut ci-dessous se met à jour automatiquement
-          dans les prochaines secondes.
+          {isActive
+            ? "Merci ! Votre abonnement est actif."
+            : "Merci ! Votre abonnement est en cours d'activation — le statut ci-dessous se met à jour automatiquement dans les prochaines secondes."}
+        </p>
+      )}
+      {abonnement === "succes" && !isActive && <SubscriptionStatusRefresher />}
+      {abonnement === "annule" && !isActive && (
+        <p role="status" className="mb-6 rounded-lg border border-gray-300 bg-gray-50 p-4 text-sm text-gray-800">
+          Paiement annulé : vous n'avez pas été débité. Vous pouvez réessayer à tout moment.
         </p>
       )}
 
