@@ -33,6 +33,7 @@ export default async function QuotesPage() {
                 <th scope="col" className="p-3">Date</th>
                 <th scope="col" className="p-3">Statut</th>
                 <th scope="col" className="p-3 text-right">Total TTC</th>
+                <th scope="col" className="p-3"><span className="sr-only">Télécharger le PDF</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -47,6 +48,15 @@ export default async function QuotesPage() {
                   <td className="p-3">{formatDate(q.issueDate)}</td>
                   <td className="p-3">{QUOTE_STATUS_LABELS[q.status]}</td>
                   <td className="p-3 text-right">{formatCentsToEuros(q.totalTtcCents)}</td>
+                  <td className="p-3 text-right">
+                    <a
+                      href={`/app/devis/${q.id}/pdf`}
+                      aria-label={`Télécharger le PDF du devis ${q.number}`}
+                      className="text-brand-700 underline"
+                    >
+                      PDF
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>

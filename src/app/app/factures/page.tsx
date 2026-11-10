@@ -66,6 +66,7 @@ export default async function InvoicesPage({
                 <th scope="col" className="p-3">Échéance</th>
                 <th scope="col" className="p-3">Statut</th>
                 <th scope="col" className="p-3 text-right">Total TTC</th>
+                <th scope="col" className="p-3"><span className="sr-only">Télécharger le PDF</span></th>
                 <th scope="col" className="p-3" />
               </tr>
             </thead>
@@ -83,6 +84,15 @@ export default async function InvoicesPage({
                     <InvoiceStatusBadge status={inv.displayStatus} />
                   </td>
                   <td className="p-3 text-right">{formatCentsToEuros(inv.totalTtcCents)}</td>
+                  <td className="p-3 text-right">
+                    <a
+                      href={`/app/factures/${inv.id}/pdf`}
+                      aria-label={`Télécharger le PDF de la facture ${inv.status === "DRAFT" ? "brouillon" : inv.number}`}
+                      className="text-brand-700 underline"
+                    >
+                      PDF
+                    </a>
+                  </td>
                   <td className="p-3 text-right">
                     {inv.displayStatus === "OVERDUE" && (
                       <ReminderButton action={sendInvoiceReminderAction.bind(null, inv.id)} />
