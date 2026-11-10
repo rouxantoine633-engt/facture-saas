@@ -27,6 +27,7 @@ function valid(): ComplianceInput {
       postalCode: "69001",
       city: "Lyon",
       country: "France",
+      siret: "44455566600027",
     },
     issueDate: new Date("2026-01-10"),
     dueDate: new Date("2026-02-09"),
@@ -77,6 +78,17 @@ describe("validateInvoiceForEmission", () => {
     input.recoveryIndemnityCents = 0;
     expect(validateInvoiceForEmission(input)).toHaveLength(1);
     input.buyer.type = "INDIVIDUAL";
+    expect(validateInvoiceForEmission(input)).toEqual([]);
+  });
+
+  it("exige le SIRET (14 chiffres) d'un client professionnel, pas celui d'un particulier", () => {
+    const input = valid();
+    input.buyer.siret = null;
+    expect(validateInvoiceForEmission(input).join(" ")).toContain("SIRET");
+    input.buyer.siret = "1234";
+    expect(validateInvoiceForEmission(input).join(" ")).toContain("SIRET");
+    input.buyer.type = "INDIVIDUAL";
+    input.recoveryIndemnityCents = 0;
     expect(validateInvoiceForEmission(input)).toEqual([]);
   });
 

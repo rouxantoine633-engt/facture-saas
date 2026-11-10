@@ -9,5 +9,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { company } = await requireActiveCompany();
   const loaded = await loadQuotePdf(company, id);
   if (!loaded) return new Response("Devis introuvable", { status: 404 });
-  return pdfResponse(loaded.data, loaded.filename);
+  return pdfResponse(loaded);
 }

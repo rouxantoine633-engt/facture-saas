@@ -14,6 +14,15 @@ export const clientSchema = z
     phone: z.string().trim().optional(),
   })
   .superRefine((d, ctx) => {
+    // Avec la réforme de la facturation électronique, le SIREN du client est une
+    // mention obligatoire des factures entre professionnels (le SIRET le contient).
+    if (d.type === "BUSINESS" && !d.siret) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["siret"],
+        message: "Le SIRET est obligatoire pour un client professionnel (14 chiffres)",
+      });
+    }
     if (d.siret && !/^\d{14}$/.test(d.siret)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

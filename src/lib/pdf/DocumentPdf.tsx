@@ -1,13 +1,16 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { PdfDocumentData } from "./build-data";
 import { formatEurosForPdf, formatRate } from "./format";
+import { PDF_FONT, PDF_FONT_BOLD, registerPdfFonts } from "./fonts";
+
+registerPdfFonts();
 
 // Accent de la charte de l'application (brand-700) ; le document reste lisible en noir et blanc.
 const ACCENT = "#1e40af";
 const ACCENT_LIGHT = "#eef2ff";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, paddingBottom: 60, fontSize: 9, fontFamily: "Helvetica", color: "#111827" },
+  page: { padding: 40, paddingBottom: 60, fontSize: 9, fontFamily: PDF_FONT, color: "#111827" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -17,15 +20,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: ACCENT,
   },
-  sellerName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: ACCENT, maxWidth: 300 },
+  sellerName: { fontSize: 16, fontFamily: PDF_FONT_BOLD, color: ACCENT, maxWidth: 300 },
   headerRight: { alignItems: "flex-end" },
-  title: { fontSize: 20, fontFamily: "Helvetica-Bold", letterSpacing: 1 },
+  title: { fontSize: 20, fontFamily: PDF_FONT_BOLD, letterSpacing: 1 },
   number: { fontSize: 11, marginTop: 4, color: "#4b5563" },
   parties: { flexDirection: "row", gap: 24, marginBottom: 20 },
   party: { flex: 1, paddingTop: 10, paddingBottom: 10 },
   clientCard: { backgroundColor: "#f9fafb", paddingHorizontal: 10, borderRadius: 4 },
   partyTitle: {
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_BOLD,
     marginBottom: 5,
     fontSize: 8,
     letterSpacing: 0.8,
@@ -37,7 +40,7 @@ const styles = StyleSheet.create({
   dateLabel: { width: 110, color: "#4b5563" },
   table: { marginBottom: 12 },
   tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#d1d5db", paddingVertical: 4 },
-  th: { fontFamily: "Helvetica-Bold", backgroundColor: ACCENT_LIGHT, color: "#1e3a8a" },
+  th: { fontFamily: PDF_FONT_BOLD, backgroundColor: ACCENT_LIGHT, color: "#1e3a8a" },
   cDesc: { flex: 4, paddingHorizontal: 3 },
   cQty: { flex: 1, textAlign: "right", paddingHorizontal: 3 },
   cPu: { flex: 1.6, textAlign: "right", paddingHorizontal: 3 },
@@ -46,7 +49,7 @@ const styles = StyleSheet.create({
   totalsBox: { alignSelf: "flex-end", width: 220, marginBottom: 16 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 2 },
   grand: {
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_BOLD,
     fontSize: 11,
     backgroundColor: ACCENT_LIGHT,
     borderTopWidth: 1,
@@ -59,12 +62,20 @@ const styles = StyleSheet.create({
   mentionLine: { marginBottom: 2 },
   signature: { marginTop: 24, height: 70, borderWidth: 0.5, borderColor: "#9ca3af", padding: 6, width: 220 },
   footer: { position: "absolute", bottom: 24, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", fontSize: 8, color: "#6b7280" },
-  watermark: { position: "absolute", top: 320, left: 90, fontSize: 90, color: "#e5e7eb", transform: "rotate(-30deg)", fontFamily: "Helvetica-Bold" },
+  watermark: { position: "absolute", top: 320, left: 90, fontSize: 90, color: "#e5e7eb", transform: "rotate(-30deg)", fontFamily: PDF_FONT_BOLD },
 });
 
 export function DocumentPdf({ data }: { data: PdfDocumentData }) {
   return (
-    <Document title={`${data.title} ${data.numberLabel}`} language="fr-FR">
+    // PDF/A-3b : format d'archivage (conservation légale des factures) et prérequis du
+    // Factur-X, qui embarque son XML dans un PDF/A-3. Exige des polices intégrées.
+    <Document
+      title={`${data.title} ${data.numberLabel}`}
+      author={data.sellerName}
+      subject={`${data.title} ${data.numberLabel} — ${data.clientName}`}
+      language="fr-FR"
+      conformance="PDF/A-3b"
+    >
       <Page size="A4" style={styles.page}>
         {data.isDraft && <Text style={styles.watermark} fixed>BROUILLON</Text>}
 

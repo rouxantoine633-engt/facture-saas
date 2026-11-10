@@ -1,6 +1,7 @@
 import { summarizeDocument, type DocumentTotals } from "@/lib/money";
 import { vatMention, type BuyerSnapshot, type SellerSnapshot } from "@/lib/invoice-compliance";
 import { formatDate } from "@/lib/labels";
+import { OPERATION_CATEGORY_LABELS, type OperationCategory } from "@/lib/operation-category";
 import { formatEurosForPdf } from "./format";
 
 const LEGAL_FORM_LABELS: Record<string, string> = {
@@ -84,6 +85,7 @@ export interface InvoicePdfInput {
   issueDate: Date;
   serviceDate?: Date | null;
   dueDate: Date;
+  operationCategory: OperationCategory;
   originQuoteNumber?: string | null;
   originQuoteDate?: Date | null;
   lines: PdfLine[];
@@ -98,6 +100,7 @@ export function buildInvoicePdfData(i: InvoicePdfInput): PdfDocumentData {
   const dates = [{ label: "Date d'émission", value: formatDate(i.issueDate) }];
   if (i.serviceDate) dates.push({ label: "Date de la prestation", value: formatDate(i.serviceDate) });
   dates.push({ label: "Date d'échéance", value: formatDate(i.dueDate) });
+  dates.push({ label: "Catégorie d'opération", value: OPERATION_CATEGORY_LABELS[i.operationCategory] });
   if (i.originQuoteNumber && i.originQuoteDate) {
     dates.push({ label: "Devis d'origine", value: `${i.originQuoteNumber} du ${formatDate(i.originQuoteDate)}` });
   }
@@ -181,6 +184,8 @@ export interface CreditNotePdfInput {
   issueDate: Date;
   invoiceNumber: string;
   invoiceDate: Date;
+  /** Catégorie d'opération de la facture rectifiée. */
+  operationCategory: OperationCategory;
   reason: string;
   lines: PdfLine[];
   seller: SellerSnapshot;
@@ -200,6 +205,7 @@ export function buildCreditNotePdfData(c: CreditNotePdfInput): PdfDocumentData {
     dates: [
       { label: "Date d'émission", value: formatDate(c.issueDate) },
       { label: "Facture rectifiée", value: `${c.invoiceNumber} du ${formatDate(c.invoiceDate)}` },
+      { label: "Catégorie d'opération", value: OPERATION_CATEGORY_LABELS[c.operationCategory] },
     ],
     sellerLines: sellerIdentityLines(c.seller),
     buyerLines: buyerIdentityLines(c.buyer),

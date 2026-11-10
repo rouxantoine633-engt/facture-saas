@@ -43,7 +43,7 @@ export async function sendDocumentByEmail(params: {
         ? await loadQuotePdf(company, documentId)
         : await loadCreditNotePdf(company, documentId);
   if (!loaded) throw new DocumentError("Document introuvable.");
-  const { data, filename } = loaded;
+  const { data, filename, facturx } = loaded;
 
   const mail = buildDocumentEmail({
     kind,
@@ -57,7 +57,7 @@ export async function sendDocumentByEmail(params: {
     customMessage: params.message,
   });
 
-  const pdf = await renderPdfBuffer(data);
+  const pdf = await renderPdfBuffer(data, facturx);
   const { messageId } = await sendEmail({
     to: { email: params.to },
     subject: mail.subject,

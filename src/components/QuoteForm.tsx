@@ -9,6 +9,12 @@ import {
   FRENCH_VAT_RATES,
   type ComputedLine,
 } from "@/lib/money";
+import {
+  DEFAULT_OPERATION_CATEGORY,
+  OPERATION_CATEGORIES,
+  OPERATION_CATEGORY_LABELS,
+  type OperationCategory,
+} from "@/lib/operation-category";
 
 interface ClientOption {
   id: string;
@@ -27,6 +33,7 @@ export interface QuoteFormPayload {
   issueDate: string;
   validUntil: string;
   notes: string;
+  operationCategory: OperationCategory;
   lines: Array<{ description: string; quantity: string; unitPriceCents: number; vatRatePer100000: number }>;
 }
 
@@ -35,6 +42,7 @@ export interface QuoteFormInitial {
   issueDate: string;
   validUntil: string;
   notes: string;
+  operationCategory?: OperationCategory;
   lines: LineState[];
 }
 
@@ -84,6 +92,9 @@ export function QuoteForm({
   const [issueDate, setIssueDate] = useState(initial?.issueDate ?? today);
   const [validUntil, setValidUntil] = useState(initial?.validUntil ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [operationCategory, setOperationCategory] = useState<OperationCategory>(
+    initial?.operationCategory ?? DEFAULT_OPERATION_CATEGORY
+  );
   const [lines, setLines] = useState<LineState[]>(initial?.lines ?? [emptyLine(defaultVat)]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -130,7 +141,7 @@ export function QuoteForm({
     }
 
     setPending(true);
-    const result = await submitAction({ clientId, issueDate, validUntil, notes, lines: payloadLines });
+    const result = await submitAction({ clientId, issueDate, validUntil, notes, operationCategory, lines: payloadLines });
     // En cas de succès, l'action redirige : on n'arrive ici qu'en cas d'erreur.
     setPending(false);
     if (result?.error) setError(result.error);
@@ -169,6 +180,26 @@ export function QuoteForm({
             Valable jusqu'au
           </label>
           <input id="validUntil" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="input mt-1" />
+        </div>
+        <div className="sm:col-span-3">
+          <label htmlFor="operationCategory" className="block text-sm font-medium">
+            Catégorie d'opération *
+          </label>
+          <select
+            id="operationCategory"
+            value={operationCategory}
+            onChange={(e) => setOperationCategory(e.target.value as OperationCategory)}
+            className="input mt-1"
+          >
+            {OPERATION_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {OPERATION_CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Mention obligatoire sur la facture : elle sera reprise automatiquement lors de la conversion du devis.
+          </p>
         </div>
       </div>
 

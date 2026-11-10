@@ -95,7 +95,7 @@ export function ClientForm({
         <input id="name" name="name" required {...field("name")} className="input" />
       </Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field id="siret" label="SIRET (14 chiffres, si professionnel)">
+        <Field id="siret" label={values.type === "BUSINESS" ? "SIRET (14 chiffres) *" : "SIRET (si professionnel)"}>
           <input id="siret" name="siret" inputMode="numeric" {...field("siret")} className="input" />
         </Field>
         <Field id="vatNumber" label="N° de TVA du client">

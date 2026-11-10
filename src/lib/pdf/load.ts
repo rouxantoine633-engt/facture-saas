@@ -2,11 +2,14 @@ import type { Company } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/documents";
 import type { BuyerSnapshot, SellerSnapshot } from "@/lib/invoice-compliance";
+import type { FacturXInput } from "@/lib/facturx/cii";
 import { buildCreditNotePdfData, buildInvoicePdfData, buildQuotePdfData, type PdfDocumentData } from "./build-data";
 
 export interface LoadedPdf {
   data: PdfDocumentData;
   filename: string;
+  /** Présent pour une facture ou un avoir émis à un client professionnel : le PDF embarque alors son XML Factur-X. */
+  facturx?: FacturXInput;
 }
 
 export async function loadInvoicePdf(company: Company, invoiceId: string): Promise<LoadedPdf | null> {
@@ -28,6 +31,7 @@ export async function loadInvoicePdf(company: Company, invoiceId: string): Promi
     issueDate: invoice.issueDate,
     serviceDate: invoice.serviceDate,
     dueDate: invoice.dueDate,
+    operationCategory: invoice.operationCategory,
     originQuoteNumber: invoice.originQuoteNumber,
     originQuoteDate: invoice.originQuoteDate,
     lines: invoice.lines.map((l) => ({
@@ -46,7 +50,30 @@ export async function loadInvoicePdf(company: Company, invoiceId: string): Promi
     discountPolicyText: (isDraft ? company.discountPolicyText : invoice.discountPolicyText) ?? "",
   });
 
-  return { data, filename: isDraft ? `brouillon-${invoice.id}.pdf` : `${invoice.number}.pdf` };
+  // Un brouillon n'est pas une facture (pas de numéro légal) ; les ventes aux particuliers
+  // relèvent du e-reporting. Dans les deux cas : PDF simple, sans XML.
+  const facturx: FacturXInput | undefined =
+    isDraft || buyer.type !== "BUSINESS"
+      ? undefined
+      : {
+          kind: "INVOICE",
+          number: invoice.number,
+          issueDate: invoice.issueDate,
+          dueDate: invoice.dueDate,
+          serviceDate: invoice.serviceDate,
+          operationCategory: invoice.operationCategory,
+          seller,
+          buyer,
+          lines: data.lines,
+          totals: data.totals,
+          settlement: {
+            latePenaltyText: invoice.latePenaltyRateText ?? "",
+            recoveryIndemnityCents: invoice.recoveryIndemnityCents ?? 0,
+            discountText: invoice.discountPolicyText ?? "",
+          },
+        };
+
+  return { data, filename: isDraft ? `brouillon-${invoice.id}.pdf` : `${invoice.number}.pdf`, facturx };
 }
 
 export async function loadQuotePdf(company: Company, quoteId: string): Promise<LoadedPdf | null> {
@@ -93,6 +120,7 @@ export async function loadCreditNotePdf(company: Company, creditNoteId: string):
     issueDate: note.issueDate,
     invoiceNumber: note.invoice.number,
     invoiceDate: note.invoice.issueDate,
+    operationCategory: note.invoice.operationCategory,
     reason: note.reason,
     lines: note.lines.map((l) => ({
       description: l.description,
@@ -106,5 +134,27 @@ export async function loadCreditNotePdf(company: Company, creditNoteId: string):
     seller,
     buyer,
   });
-  return { data, filename: `${note.number}.pdf` };
+
+  const facturx: FacturXInput | undefined =
+    buyer.type !== "BUSINESS"
+      ? undefined
+      : {
+          kind: "CREDIT_NOTE",
+          number: note.number,
+          issueDate: note.issueDate,
+          operationCategory: note.invoice.operationCategory,
+          seller,
+          buyer,
+          lines: data.lines,
+          totals: data.totals,
+          // Les mentions de règlement sont celles, figées, de la facture rectifiée.
+          settlement: {
+            latePenaltyText: note.invoice.latePenaltyRateText ?? "",
+            recoveryIndemnityCents: note.invoice.recoveryIndemnityCents ?? 0,
+            discountText: note.invoice.discountPolicyText ?? "",
+          },
+          rectifiedInvoice: { number: note.invoice.number, issueDate: note.invoice.issueDate },
+        };
+
+  return { data, filename: `${note.number}.pdf`, facturx };
 }

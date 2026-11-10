@@ -35,6 +35,7 @@ export async function createQuoteAction(input: QuoteInput): Promise<ActionResult
       issueDate: new Date(d.issueDate),
       validUntil: d.validUntil ? new Date(d.validUntil) : undefined,
       notes: d.notes || undefined,
+      operationCategory: d.operationCategory,
       lines,
     });
     quoteId = quote.id;
@@ -69,6 +70,7 @@ export async function updateQuoteAction(quoteId: string, input: QuoteInput): Pro
       issueDate: new Date(d.issueDate),
       validUntil: d.validUntil ? new Date(d.validUntil) : undefined,
       notes: d.notes || undefined,
+      operationCategory: d.operationCategory,
       lines,
     });
   } catch (e) {

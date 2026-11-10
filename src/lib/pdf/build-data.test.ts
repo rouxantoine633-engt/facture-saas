@@ -14,6 +14,7 @@ function input(overrides: Partial<InvoicePdfInput> = {}): InvoicePdfInput {
     isDraft: false,
     issueDate: new Date("2026-01-10"),
     dueDate: new Date("2026-02-09"),
+    operationCategory: "PRESTATION_SERVICES",
     lines: [line],
     seller: {
       legalName: "Jean Dupont",
@@ -97,6 +98,15 @@ describe("buildInvoicePdfData", () => {
     expect(buildInvoicePdfData(input()).totals.totalTtcCents).toBe(10000);
   });
 
+  it("indique la catégorie d'opération sur la facture", () => {
+    const data = buildInvoicePdfData(input({ operationCategory: "MIXTE" }));
+    expect(data.dates).toContainEqual({ label: "Catégorie d'opération", value: "Opération mixte (biens et services)" });
+    expect(buildInvoicePdfData(input()).dates).toContainEqual({
+      label: "Catégorie d'opération",
+      value: "Prestation de services",
+    });
+  });
+
   it("expose le nom de l'entreprise pour l'en-tête, y compris sur un brouillon", () => {
     expect(buildInvoicePdfData(input()).sellerName).toBe("Jean Dupont");
     expect(buildInvoicePdfData(input({ isDraft: true })).sellerName).toBe("Jean Dupont");
@@ -132,6 +142,7 @@ describe("buildCreditNotePdfData", () => {
     issueDate: new Date("2026-02-01"),
     invoiceNumber: "F-2026-0001",
     invoiceDate: new Date("2026-01-10"),
+    operationCategory: "LIVRAISON_BIENS",
     reason: "Prestation annulée",
     lines: [line],
     seller: input().seller,
@@ -142,6 +153,7 @@ describe("buildCreditNotePdfData", () => {
     expect(data.title).toBe("AVOIR");
     expect(data.dates).toContainEqual({ label: "Facture rectifiée", value: "F-2026-0001 du 10/01/2026" });
     expect(data.mentions.join("\n")).toContain("Motif : Prestation annulée");
+    expect(data.dates).toContainEqual({ label: "Catégorie d'opération", value: "Livraison de biens" });
     expect(data.sellerName).toBe("Jean Dupont");
   });
 
