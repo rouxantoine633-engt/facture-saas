@@ -148,7 +148,7 @@ async function deliverReminderEmail(invoice: InvoiceForReminder, offsetDays: num
     html: mail.html,
     senderName: company.commercialName || company.legalName,
     replyTo: { email: company.email, name: company.legalName },
-    attachments: [{ name: loaded.filename, content: await renderPdfBuffer(loaded.data) }],
+    attachments: [{ name: loaded.filename, content: await renderPdfBuffer(loaded.data, loaded.facturx) }],
   });
 }
 

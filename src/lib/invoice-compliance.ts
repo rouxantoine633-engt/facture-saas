@@ -76,6 +76,11 @@ export function validateInvoiceForEmission(input: ComplianceInput): string[] {
   if (blank(buyer.addressLine1) || blank(buyer.postalCode) || blank(buyer.city)) {
     errors.push("L'adresse de votre client est incomplète.");
   }
+  if (buyer.type === "BUSINESS" && !/^\d{14}$/.test(buyer.siret ?? "")) {
+    errors.push(
+      "Il manque le SIRET (14 chiffres) de votre client professionnel : il est obligatoire sur les factures entre professionnels (facturation électronique). Complétez sa fiche dans « Clients »."
+    );
+  }
 
   if (lines.length === 0) errors.push("Ajoutez au moins une ligne à la facture.");
   lines.forEach((line, i) => {

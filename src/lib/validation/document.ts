@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FRENCH_VAT_RATES } from "@/lib/money";
+import { DEFAULT_OPERATION_CATEGORY, OPERATION_CATEGORIES } from "@/lib/operation-category";
 
 export const ALLOWED_VAT_RATES: number[] = Object.values(FRENCH_VAT_RATES);
 
@@ -29,6 +30,9 @@ export const quoteSchema = z.object({
   issueDate: dateString,
   validUntil: dateString.optional().or(z.literal("")),
   notes: z.string().trim().optional(),
+  operationCategory: z
+    .enum(OPERATION_CATEGORIES, { message: "Choisissez la catégorie d'opération" })
+    .default(DEFAULT_OPERATION_CATEGORY),
   lines: z.array(lineSchema).min(1, "Ajoutez au moins une ligne au devis"),
 });
 

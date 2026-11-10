@@ -143,6 +143,14 @@ enum ReminderStatus {
 // Reprend directement les valeurs de Stripe (Subscription.status) : un
 // passthrough plutôt qu'un remappage évite de perdre de l'information et
 // reste correct si Stripe ajoute un statut. NONE = jamais souscrit.
+// Catégorie d'opération : mention obligatoire des factures avec la réforme de la
+// facturation électronique. Valeur par défaut pour l'existant : prestation de services.
+enum OperationCategory {
+  LIVRAISON_BIENS
+  PRESTATION_SERVICES
+  MIXTE
+}
+
 enum SubscriptionStatus {
   NONE
   INCOMPLETE
@@ -301,6 +309,8 @@ model Quote {
   validUntil DateTime?
   notes      String?
 
+  operationCategory OperationCategory @default(PRESTATION_SERVICES)
+
   subtotalHtCents Int @default(0)
   totalVatCents   Int @default(0)
   totalTtcCents   Int @default(0)
@@ -357,6 +367,10 @@ model Invoice {
   dueDate     DateTime
 
   notes String?
+
+  // Figée avec la facture (reprise du devis) : l'immutabilité en base interdit
+  // toute modification après émission.
+  operationCategory OperationCategory @default(PRESTATION_SERVICES)
 
   // Origine devis (si applicable) — figé pour rester exact même si le devis change
   originQuoteNumber String?

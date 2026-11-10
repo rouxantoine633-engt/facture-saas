@@ -9,6 +9,7 @@ import {
   PAYMENT_METHOD_LABELS,
   REMINDER_STATUS_LABELS,
 } from "@/lib/labels";
+import { OPERATION_CATEGORY_LABELS } from "@/lib/operation-category";
 import { amountStillDue } from "@/lib/credit-notes";
 import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/documents";
 import { vatMention, type BuyerSnapshot, type SellerSnapshot } from "@/lib/invoice-compliance";
@@ -65,7 +66,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600">
         <InvoiceStatusBadge status={status} />
         <span>
-          émise le {formatDate(invoice.issueDate)} · échéance le {formatDate(invoice.dueDate)}
+          émise le {formatDate(invoice.issueDate)} · échéance le {formatDate(invoice.dueDate)} ·{" "}
+          {OPERATION_CATEGORY_LABELS[invoice.operationCategory]}
         </span>
       </div>
       {invoice.originQuoteNumber && invoice.originQuoteDate && (

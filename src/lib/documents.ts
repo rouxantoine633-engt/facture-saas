@@ -5,6 +5,7 @@ import { computeLineTotals, formatCentsToEuros, summarizeDocument } from "@/lib/
 import { allocateDocumentNumber } from "@/lib/numbering";
 import { amountStillDue, statusAfterCreditNote, validateCreditNote } from "@/lib/credit-notes";
 import { canSetQuoteStatus } from "@/lib/quote-status";
+import type { OperationCategory } from "@/lib/operation-category";
 import {
   validateInvoiceForEmission,
   type BuyerSnapshot,
@@ -84,6 +85,7 @@ export async function createQuote(params: {
   issueDate: Date;
   validUntil?: Date;
   notes?: string;
+  operationCategory?: OperationCategory;
   lines: LineDraft[];
 }) {
   const { lines, totals } = computeDocumentLines(params.lines);
@@ -106,6 +108,7 @@ export async function createQuote(params: {
         issueDate: params.issueDate,
         validUntil: params.validUntil,
         notes: params.notes,
+        operationCategory: params.operationCategory,
         subtotalHtCents: totals.subtotalHtCents,
         totalVatCents: totals.totalVatCents,
         totalTtcCents: totals.totalTtcCents,
@@ -141,6 +144,7 @@ export async function updateQuote(params: {
   issueDate: Date;
   validUntil?: Date;
   notes?: string;
+  operationCategory?: OperationCategory;
   lines: LineDraft[];
 }) {
   const { lines, totals } = computeDocumentLines(params.lines);
@@ -161,6 +165,7 @@ export async function updateQuote(params: {
         issueDate: params.issueDate,
         validUntil: params.validUntil ?? null,
         notes: params.notes ?? null,
+        ...(params.operationCategory ? { operationCategory: params.operationCategory } : {}),
         subtotalHtCents: totals.subtotalHtCents,
         totalVatCents: totals.totalVatCents,
         totalTtcCents: totals.totalTtcCents,
@@ -197,6 +202,7 @@ export async function convertQuoteToInvoice(params: { companyId: string; quoteId
         dueDate,
         originQuoteNumber: quote.number,
         originQuoteDate: quote.issueDate,
+        operationCategory: quote.operationCategory,
         subtotalHtCents: quote.subtotalHtCents,
         totalVatCents: quote.totalVatCents,
         totalTtcCents: quote.totalTtcCents,

@@ -41,6 +41,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
     issueDate: quote.issueDate.toISOString().slice(0, 10),
     validUntil: quote.validUntil ? quote.validUntil.toISOString().slice(0, 10) : "",
     notes: quote.notes ?? "",
+    operationCategory: quote.operationCategory,
     lines: quote.lines.map((l) => ({
       description: l.description,
       quantity: l.quantity.toString(),

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { formatDate, QUOTE_STATUS_LABELS } from "@/lib/labels";
+import { OPERATION_CATEGORY_LABELS } from "@/lib/operation-category";
 import { LinesTable } from "@/components/LinesTable";
 import { ActionButton } from "@/components/ActionButton";
 import { convertQuoteAction } from "../actions";
@@ -35,6 +36,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       <p className="mt-1 text-gray-600">
         {QUOTE_STATUS_LABELS[quote.status]} · émis le {formatDate(quote.issueDate)}
         {quote.validUntil && ` · valable jusqu'au ${formatDate(quote.validUntil)}`}
+        {` · ${OPERATION_CATEGORY_LABELS[quote.operationCategory]}`}
       </p>
       <p className="mt-4">
         <span className="font-medium">{quote.client.name}</span>
