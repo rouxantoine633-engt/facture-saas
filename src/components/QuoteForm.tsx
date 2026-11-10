@@ -199,6 +199,8 @@ export function QuoteForm({
           </select>
           <p className="mt-1 text-xs text-gray-500">
             Mention obligatoire sur la facture : elle sera reprise automatiquement lors de la conversion du devis.
+            {operationCategory === "MIXTE" &&
+              " Une opération mixte ne peut pas être facturée à un particulier (e-reporting) : séparez alors les biens et les services en deux factures."}
           </p>
         </div>
       </div>
