@@ -36,6 +36,8 @@ export interface BuyerSnapshot {
 export interface ComplianceInput {
   seller: SellerSnapshot;
   buyer: BuyerSnapshot;
+  /** Catégorie d'opération de la facture ; une opération mixte est refusée pour un particulier (e-reporting). */
+  operationCategory?: "LIVRAISON_BIENS" | "PRESTATION_SERVICES" | "MIXTE";
   issueDate: Date;
   dueDate: Date;
   lines: Array<{
@@ -75,6 +77,11 @@ export function validateInvoiceForEmission(input: ComplianceInput): string[] {
   if (blank(buyer.name)) errors.push("Il manque le nom de votre client.");
   if (blank(buyer.addressLine1) || blank(buyer.postalCode) || blank(buyer.city)) {
     errors.push("L'adresse de votre client est incomplète.");
+  }
+  if (buyer.type === "INDIVIDUAL" && input.operationCategory === "MIXTE") {
+    errors.push(
+      "Une opération mixte (biens et services) ne peut pas être facturée à un particulier : l'e-reporting exige une catégorie par transaction. Émettez deux factures distinctes (une pour les biens, une pour les services), ou changez la catégorie d'opération."
+    );
   }
   if (buyer.type === "BUSINESS" && !/^\d{14}$/.test(buyer.siret ?? "")) {
     errors.push(

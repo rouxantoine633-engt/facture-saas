@@ -43,6 +43,19 @@ describe("validateInvoiceForEmission", () => {
     expect(validateInvoiceForEmission(valid())).toEqual([]);
   });
 
+  it("refuse une opération mixte pour un particulier (e-reporting), pas pour un professionnel", () => {
+    const individual = valid();
+    individual.buyer = { ...individual.buyer, type: "INDIVIDUAL", siret: undefined };
+    individual.operationCategory = "MIXTE";
+    expect(validateInvoiceForEmission(individual).join(" ")).toContain("opération mixte");
+    individual.operationCategory = "PRESTATION_SERVICES";
+    expect(validateInvoiceForEmission(individual)).toEqual([]);
+
+    const business = valid();
+    business.operationCategory = "MIXTE";
+    expect(validateInvoiceForEmission(business)).toEqual([]);
+  });
+
   it("refuse une franchise en base avec TVA sur une ligne", () => {
     const input = valid();
     input.lines[0]!.vatRatePer100000 = 20000;

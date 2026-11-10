@@ -8,6 +8,7 @@ import {
   Briefcase,
   Building2,
   ChevronDown,
+  FileBarChart,
   FileSpreadsheet,
   FileText,
   Home,
@@ -91,7 +92,10 @@ const NAV: NavSection[] = [
     kind: "static",
     label: "Comptabilité & Légal",
     icon: Scale,
-    items: [{ kind: "link", label: "Export comptable", href: "/app/export", icon: FileSpreadsheet }],
+    items: [
+      { kind: "link", label: "Export comptable", href: "/app/export", icon: FileSpreadsheet },
+      { kind: "link", label: "E-reporting", href: "/app/e-reporting", icon: FileBarChart },
+    ],
   },
   {
     kind: "static",

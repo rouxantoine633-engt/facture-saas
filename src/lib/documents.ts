@@ -262,6 +262,7 @@ export async function emitInvoice(params: { companyId: string; invoiceId: string
       buyer,
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
+      operationCategory: invoice.operationCategory,
       lines,
       latePenaltyRateText: invoice.company.latePenaltyRateText,
       recoveryIndemnityCents,
