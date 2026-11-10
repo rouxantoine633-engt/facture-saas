@@ -33,6 +33,7 @@ export interface PdfDocumentData {
   dueDateLabel?: string;
   validUntilLabel?: string;
   rectifiedInvoiceNumber?: string;
+  sellerName: string;
   isDraft: boolean;
   dates: Array<{ label: string; value: string }>;
   sellerLines: string[];
@@ -119,6 +120,7 @@ export function buildInvoicePdfData(i: InvoicePdfInput): PdfDocumentData {
     clientName: i.buyer.name,
     dueDateLabel: formatDate(i.dueDate),
     numberLabel: i.isDraft ? "BROUILLON" : `N° ${i.number}`,
+    sellerName: i.seller.legalName,
     isDraft: i.isDraft,
     dates,
     sellerLines: sellerIdentityLines(i.seller),
@@ -158,6 +160,7 @@ export function buildQuotePdfData(q: QuotePdfInput): PdfDocumentData {
     clientName: q.buyer.name,
     validUntilLabel: q.validUntil ? formatDate(q.validUntil) : undefined,
     numberLabel: `N° ${q.number}`,
+    sellerName: q.seller.legalName,
     isDraft: false,
     dates,
     sellerLines: sellerIdentityLines(q.seller),
@@ -192,6 +195,7 @@ export function buildCreditNotePdfData(c: CreditNotePdfInput): PdfDocumentData {
     clientName: c.buyer.name,
     rectifiedInvoiceNumber: c.invoiceNumber,
     numberLabel: `N° ${c.number}`,
+    sellerName: c.seller.legalName,
     isDraft: false,
     dates: [
       { label: "Date d'émission", value: formatDate(c.issueDate) },

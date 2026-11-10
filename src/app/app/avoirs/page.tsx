@@ -31,6 +31,7 @@ export default async function CreditNotesPage() {
                 <th scope="col" className="p-3">Client</th>
                 <th scope="col" className="p-3">Date</th>
                 <th scope="col" className="p-3 text-right">Total TTC</th>
+                <th scope="col" className="p-3"><span className="sr-only">Télécharger le PDF</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -45,6 +46,15 @@ export default async function CreditNotesPage() {
                   <td className="p-3">{n.client.name}</td>
                   <td className="p-3">{formatDate(n.issueDate)}</td>
                   <td className="p-3 text-right">{formatCentsToEuros(n.totalTtcCents)}</td>
+                  <td className="p-3 text-right">
+                    <a
+                      href={`/app/avoirs/${n.id}/pdf`}
+                      aria-label={`Télécharger le PDF de l'avoir ${n.number}`}
+                      className="text-brand-700 underline"
+                    >
+                      PDF
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>

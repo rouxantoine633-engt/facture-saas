@@ -96,6 +96,11 @@ describe("buildInvoicePdfData", () => {
   it("recalcule les totaux à partir des lignes", () => {
     expect(buildInvoicePdfData(input()).totals.totalTtcCents).toBe(10000);
   });
+
+  it("expose le nom de l'entreprise pour l'en-tête, y compris sur un brouillon", () => {
+    expect(buildInvoicePdfData(input()).sellerName).toBe("Jean Dupont");
+    expect(buildInvoicePdfData(input({ isDraft: true })).sellerName).toBe("Jean Dupont");
+  });
 });
 
 describe("buildQuotePdfData", () => {
@@ -110,6 +115,7 @@ describe("buildQuotePdfData", () => {
     });
     expect(data.dates.map((d) => d.label)).toContain("Valable jusqu'au");
     expect(data.mentions.join("\n")).toContain("Bon pour accord");
+    expect(data.sellerName).toBe("Jean Dupont");
   });
 });
 
@@ -136,6 +142,7 @@ describe("buildCreditNotePdfData", () => {
     expect(data.title).toBe("AVOIR");
     expect(data.dates).toContainEqual({ label: "Facture rectifiée", value: "F-2026-0001 du 10/01/2026" });
     expect(data.mentions.join("\n")).toContain("Motif : Prestation annulée");
+    expect(data.sellerName).toBe("Jean Dupont");
   });
 
   it("n'inclut ni échéance ni pénalités de retard", () => {

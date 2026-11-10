@@ -2,20 +2,42 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { PdfDocumentData } from "./build-data";
 import { formatEurosForPdf, formatRate } from "./format";
 
+// Accent de la charte de l'application (brand-700) ; le document reste lisible en noir et blanc.
+const ACCENT = "#1e40af";
+const ACCENT_LIGHT = "#eef2ff";
+
 const styles = StyleSheet.create({
   page: { padding: 40, paddingBottom: 60, fontSize: 9, fontFamily: "Helvetica", color: "#111827" },
-  header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 24 },
-  title: { fontSize: 22, fontFamily: "Helvetica-Bold" },
-  number: { fontSize: 12, marginTop: 4 },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingBottom: 12,
+    marginBottom: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: ACCENT,
+  },
+  sellerName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: ACCENT, maxWidth: 300 },
+  headerRight: { alignItems: "flex-end" },
+  title: { fontSize: 20, fontFamily: "Helvetica-Bold", letterSpacing: 1 },
+  number: { fontSize: 11, marginTop: 4, color: "#4b5563" },
   parties: { flexDirection: "row", gap: 24, marginBottom: 20 },
-  party: { flex: 1 },
-  partyTitle: { fontFamily: "Helvetica-Bold", marginBottom: 4, fontSize: 10 },
+  party: { flex: 1, paddingTop: 10, paddingBottom: 10 },
+  clientCard: { backgroundColor: "#f9fafb", paddingHorizontal: 10, borderRadius: 4 },
+  partyTitle: {
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 5,
+    fontSize: 8,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: ACCENT,
+  },
   dates: { marginBottom: 16 },
   dateRow: { flexDirection: "row", marginBottom: 2 },
   dateLabel: { width: 110, color: "#4b5563" },
   table: { marginBottom: 12 },
   tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#d1d5db", paddingVertical: 4 },
-  th: { fontFamily: "Helvetica-Bold", backgroundColor: "#f3f4f6" },
+  th: { fontFamily: "Helvetica-Bold", backgroundColor: ACCENT_LIGHT, color: "#1e3a8a" },
   cDesc: { flex: 4, paddingHorizontal: 3 },
   cQty: { flex: 1, textAlign: "right", paddingHorizontal: 3 },
   cPu: { flex: 1.6, textAlign: "right", paddingHorizontal: 3 },
@@ -23,8 +45,17 @@ const styles = StyleSheet.create({
   cTot: { flex: 1.6, textAlign: "right", paddingHorizontal: 3 },
   totalsBox: { alignSelf: "flex-end", width: 220, marginBottom: 16 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 2 },
-  grand: { fontFamily: "Helvetica-Bold", fontSize: 11, borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 4, marginTop: 2 },
-  mentions: { marginTop: 8, color: "#374151" },
+  grand: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 11,
+    backgroundColor: ACCENT_LIGHT,
+    borderTopWidth: 1,
+    borderTopColor: ACCENT,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
+    marginTop: 3,
+  },
+  mentions: { marginTop: 8, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: "#d1d5db", color: "#374151" },
   mentionLine: { marginBottom: 2 },
   signature: { marginTop: 24, height: 70, borderWidth: 0.5, borderColor: "#9ca3af", padding: 6, width: 220 },
   footer: { position: "absolute", bottom: 24, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", fontSize: 8, color: "#6b7280" },
@@ -38,7 +69,8 @@ export function DocumentPdf({ data }: { data: PdfDocumentData }) {
         {data.isDraft && <Text style={styles.watermark} fixed>BROUILLON</Text>}
 
         <View style={styles.header}>
-          <View>
+          <Text style={styles.sellerName}>{data.sellerName}</Text>
+          <View style={styles.headerRight}>
             <Text style={styles.title}>{data.title}</Text>
             <Text style={styles.number}>{data.numberLabel}</Text>
           </View>
@@ -51,7 +83,7 @@ export function DocumentPdf({ data }: { data: PdfDocumentData }) {
               <Text key={i}>{l}</Text>
             ))}
           </View>
-          <View style={styles.party}>
+          <View style={[styles.party, styles.clientCard]}>
             <Text style={styles.partyTitle}>Client</Text>
             {data.buyerLines.map((l, i) => (
               <Text key={i}>{l}</Text>
