@@ -10,7 +10,7 @@ const ACCENT = "#1e40af";
 const ACCENT_LIGHT = "#eef2ff";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, paddingBottom: 60, fontSize: 9, fontFamily: PDF_FONT, color: "#111827" },
+  page: { padding: 40, paddingBottom: 92, fontSize: 9, fontFamily: PDF_FONT, color: "#111827" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -61,7 +61,23 @@ const styles = StyleSheet.create({
   mentions: { marginTop: 8, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: "#d1d5db", color: "#374151" },
   mentionLine: { marginBottom: 2 },
   signature: { marginTop: 24, height: 70, borderWidth: 0.5, borderColor: "#9ca3af", padding: 6, width: 220 },
-  footer: { position: "absolute", bottom: 24, left: 40, right: 40, flexDirection: "row", justifyContent: "space-between", fontSize: 8, color: "#6b7280" },
+  footer: {
+    position: "absolute",
+    bottom: 22,
+    left: 40,
+    right: 40,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingTop: 6,
+    borderTopWidth: 0.5,
+    borderTopColor: "#d1d5db",
+    fontSize: 7,
+    color: "#4b5563",
+  },
+  // Pas de `lineHeight` sur ce bloc : en position absolue, react-pdf le fait sortir de la page.
+  footerLegal: { flex: 1, paddingRight: 16 },
+  footerLine: { marginBottom: 1.5 },
+  footerPage: { width: 46, textAlign: "right", fontSize: 7.5 },
   watermark: { position: "absolute", top: 320, left: 90, fontSize: 90, color: "#e5e7eb", transform: "rotate(-30deg)", fontFamily: PDF_FONT_BOLD },
 });
 
@@ -181,8 +197,14 @@ export function DocumentPdf({ data }: { data: PdfDocumentData }) {
         )}
 
         <View style={styles.footer} fixed>
-          <Text>{data.footerLine}</Text>
-          <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`} />
+          <View style={styles.footerLegal}>
+            {data.footerLines.map((l, i) => (
+              <Text key={i} style={styles.footerLine}>
+                {l}
+              </Text>
+            ))}
+          </View>
+          <Text style={styles.footerPage} render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`} />
         </View>
       </Page>
     </Document>

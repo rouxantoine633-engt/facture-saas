@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCreditNotePdfData, buildInvoicePdfData, buildQuotePdfData, type InvoicePdfInput } from "./build-data";
+import { buildCreditNotePdfData, buildInvoicePdfData, buildQuotePdfData, legalFooterLines, type InvoicePdfInput } from "./build-data";
 import { formatEurosForPdf } from "./format";
 import { computeLineTotals } from "@/lib/money";
 
@@ -47,7 +47,7 @@ function input(overrides: Partial<InvoicePdfInput> = {}): InvoicePdfInput {
 describe("buildInvoicePdfData", () => {
   it("contient toutes les mentions obligatoires pour un client professionnel", () => {
     const data = buildInvoicePdfData(input());
-    const text = [...data.mentions, ...data.sellerLines, data.vatMention, data.numberLabel].join("\n");
+    const text = [...data.mentions, ...data.footerLines, data.vatMention, data.numberLabel].join("\n");
     expect(text).toContain("TVA non applicable, art. 293B du CGI");
     expect(text).toContain("Pénalités de retard : Taux BCE + 10 points");
     expect(text).toContain("40,00 €");
@@ -89,9 +89,9 @@ describe("buildInvoicePdfData", () => {
         seller: { ...input().seller, legalForm: "SASU", rcsCity: "Paris", rcsNumber: "123 456 789", shareCapitalCents: 100000 },
       })
     );
-    const text = data.sellerLines.join("\n");
+    const text = data.footerLines.join("\n");
     expect(text).toContain("RCS Paris 123 456 789");
-    expect(text).toContain("Capital social : 1 000,00 €");
+    expect(text).toContain("au capital de 1 000,00 €");
   });
 
   it("recalcule les totaux à partir des lignes", () => {
@@ -165,5 +165,72 @@ describe("buildCreditNotePdfData", () => {
   it("porte son propre numéro et un libellé de total dédié", () => {
     expect(data.numberLabel).toBe("N° AV-2026-0001");
     expect(data.totalLabel).toBe("Total TTC de l'avoir");
+  });
+});
+
+describe("pied de page : mentions légales de l'émetteur", () => {
+  const seller = input().seller; // micro-entrepreneur en franchise de TVA
+
+  it("regroupe identité, forme juridique, siège, SIRET et mention de TVA", () => {
+    const [identity, registration, vat] = legalFooterLines(seller);
+    expect(identity).toBe("Jean Dupont — Entrepreneur individuel (micro-entrepreneur) — Siège : 1 rue de la Paix, 75002 Paris");
+    expect(registration).toBe("SIRET 12345678900012");
+    expect(vat).toBe("TVA non applicable, art. 293B du CGI");
+  });
+
+  it("affiche le numéro de TVA intracommunautaire pour un assujetti", () => {
+    const lines = legalFooterLines({ ...seller, vatRegime: "REEL_NORMAL", vatNumber: "FR40552100554" });
+    expect(lines.at(-1)).toBe("N° TVA intracommunautaire : FR40552100554");
+  });
+
+  it("ajoute le code NAF/APE quand il est renseigné, et seulement alors", () => {
+    expect(legalFooterLines(seller)[1]).not.toContain("NAF");
+    expect(legalFooterLines({ ...seller, nafCode: "6201Z" })[1]).toBe("SIRET 12345678900012 — Code NAF/APE : 6201Z");
+  });
+
+  it("indique le RCS avec la ville du greffe, le capital et la forme d'une société", () => {
+    const lines = legalFooterLines({ ...seller, legalName: "ACME", legalForm: "SARL", rcsCity: "Lyon", rcsNumber: "552 100 554", shareCapitalCents: 500000, nafCode: "6201Z" });
+    expect(lines[0]).toContain("ACME — SARL au capital de 5 000,00 €");
+    expect(lines[1]).toBe("SIRET 12345678900012 — Code NAF/APE : 6201Z — RCS Lyon 552 100 554");
+  });
+
+  it("indique le Répertoire des métiers pour un artisan, éventuellement avec le RCS", () => {
+    expect(legalFooterLines({ ...seller, legalForm: "EI", rmCity: "Clermont-Ferrand", rmNumber: "552 100 554" })[1]).toBe(
+      "SIRET 12345678900012 — RM Clermont-Ferrand 552 100 554"
+    );
+    expect(legalFooterLines({ ...seller, rcsCity: "Lyon", rcsNumber: "1", rmCity: "Lyon", rmNumber: "2" })[1]).toBe(
+      "SIRET 12345678900012 — RCS Lyon 1 — RM Lyon 2"
+    );
+  });
+
+  it("donne l'adresse complète : complément d'adresse et pays étranger", () => {
+    expect(legalFooterLines({ ...seller, addressLine2: "Bâtiment B" })[0]).toContain("1 rue de la Paix, Bâtiment B, 75002 Paris");
+    expect(legalFooterLines({ ...seller, country: "Belgique" })[0]).toContain("75002 Paris, Belgique");
+  });
+
+  it("n'écrit pas « EI » ou une forme vide quand la forme est « Autre »", () => {
+    expect(legalFooterLines({ ...seller, legalForm: "AUTRE" })[0]).toMatch(/^Jean Dupont — Siège :/);
+  });
+
+  it("figure sur les factures, devis et avoirs, et plus dans le bloc Émetteur", () => {
+    const sel = { ...seller, nafCode: "6201Z" };
+    const invoice = buildInvoicePdfData(input({ seller: sel }));
+    const quote = buildQuotePdfData({ number: "DEV-1", issueDate: new Date("2026-01-10"), lines: [line], seller: sel, buyer: input().buyer });
+    const credit = buildCreditNotePdfData({
+      number: "AV-1",
+      issueDate: new Date("2026-01-10"),
+      invoiceNumber: "F-1",
+      invoiceDate: new Date("2026-01-01"),
+      operationCategory: "PRESTATION_SERVICES",
+      reason: "Erreur",
+      lines: [line],
+      seller: sel,
+      buyer: input().buyer,
+    });
+    for (const data of [invoice, quote, credit]) {
+      expect(data.footerLines).toEqual(legalFooterLines(sel));
+      expect(data.footerLines.join("\n")).toContain("SIRET 12345678900012");
+      expect(data.sellerLines.join("\n")).not.toContain("SIRET");
+    }
   });
 });

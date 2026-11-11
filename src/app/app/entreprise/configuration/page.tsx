@@ -30,8 +30,11 @@ export default async function CompanyConfigurationPage({
         siret: company.siret,
         vatRegime: company.vatRegime,
         vatNumber: company.vatNumber ?? "",
+        nafCode: company.nafCode ?? "",
         rcsCity: company.rcsCity ?? "",
         rcsNumber: company.rcsNumber ?? "",
+        rmCity: company.rmCity ?? "",
+        rmNumber: company.rmNumber ?? "",
         shareCapitalEuros:
           company.shareCapitalCents != null
             ? company.shareCapitalCents / 100

@@ -186,9 +186,16 @@ model Company {
   vatRegime VatRegime
   vatNumber String? // obligatoire si vatRegime != FRANCHISE_EN_BASE
 
-  // RCS — uniquement pour les formes commerciales qui y sont immatriculées
+  // Code NAF/APE (4 chiffres + 1 lettre, ex. « 6201Z ») : affiché en pied de page des documents
+  nafCode String? @db.VarChar(5)
+
+  // RCS — formes commerciales (obligatoire pour une société), facultatif pour une entreprise individuelle
   rcsCity   String?
   rcsNumber String?
+
+  // Répertoire des métiers (artisans) : chambre de métiers (ville) et numéro d'immatriculation
+  rmCity   String?
+  rmNumber String?
 
   // Capital social — pertinent pour EURL/SARL/SASU/SAS
   shareCapitalCents Int?
