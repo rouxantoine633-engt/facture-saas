@@ -38,6 +38,7 @@ export async function saveCompanyAction(
     vatRegime: data.vatRegime,
     vatNumber: data.vatNumber || null,
     nafCode: data.nafCode || null,
+    brandColor: data.brandColor || null,
     rcsCity: data.rcsCity || null,
     rcsNumber: data.rcsNumber || null,
     rmCity: data.rmCity || null,

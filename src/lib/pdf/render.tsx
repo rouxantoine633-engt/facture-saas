@@ -3,6 +3,7 @@ import { buildCiiXml, FacturXError, type FacturXInput } from "@/lib/facturx/cii"
 import { finalizePdf } from "@/lib/facturx/embed";
 import type { PdfDocumentData } from "./build-data";
 import { DocumentPdf } from "./DocumentPdf";
+import { ExportReportPdf, type ExportReportInput } from "./ExportReportPdf";
 import type { LoadedPdf } from "./load";
 
 /**
@@ -38,4 +39,10 @@ export async function pdfResponse(loaded: LoadedPdf): Promise<Response> {
       "Cache-Control": "private, no-store",
     },
   });
+}
+
+/** Rapport PDF des exports comptables (journal des ventes ou encaissements), en PDF/A-3b comme les factures. */
+export async function renderExportReportBuffer(input: ExportReportInput): Promise<Buffer> {
+  const base = await renderToBuffer(<ExportReportPdf {...input} />);
+  return finalizePdf(base);
 }

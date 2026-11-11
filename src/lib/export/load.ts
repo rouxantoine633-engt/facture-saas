@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import type { BuyerSnapshot } from "@/lib/invoice-compliance";
-import { buildPaymentsJournal, buildSalesJournal, type SalesDocument } from "./accounting";
+import { buildPaymentsJournal, buildSalesJournal, type PaymentRow, type SalesDocument } from "./accounting";
 
 const toComputedLines = <T extends { lineHtCents: number; lineVatCents: number; lineTtcCents: number; vatRatePer100000: number }>(
   lines: T[]
 ) => lines.map((l) => ({ lineHtCents: l.lineHtCents, lineVatCents: l.lineVatCents, lineTtcCents: l.lineTtcCents, vatRatePer100000: l.vatRatePer100000 }));
 
-/** Journal des ventes : factures émises (jamais les brouillons) et avoirs de la période, par date d'émission. */
-export async function loadSalesJournal(companyId: string, from: Date, to: Date): Promise<string[][]> {
+/** Factures émises (jamais les brouillons) et avoirs de la période, par date d'émission. */
+export async function loadSalesDocuments(companyId: string, from: Date, to: Date): Promise<SalesDocument[]> {
   const range = { gte: from, lte: to };
   const [invoices, creditNotes] = await Promise.all([
     prisma.invoice.findMany({
@@ -55,23 +55,31 @@ export async function loadSalesJournal(companyId: string, from: Date, to: Date):
     }),
   ].sort((a, b) => a.issueDate.getTime() - b.issueDate.getTime() || a.number.localeCompare(b.number));
 
-  return buildSalesJournal(docs);
+  return docs;
 }
 
-export async function loadPaymentsJournal(companyId: string, from: Date, to: Date): Promise<string[][]> {
+/** Journal des ventes (CSV). */
+export async function loadSalesJournal(companyId: string, from: Date, to: Date): Promise<string[][]> {
+  return buildSalesJournal(await loadSalesDocuments(companyId, from, to));
+}
+
+/** Encaissements de la période, par date de paiement. */
+export async function loadPaymentRows(companyId: string, from: Date, to: Date): Promise<PaymentRow[]> {
   const payments = await prisma.payment.findMany({
     where: { invoice: { companyId }, paidAt: { gte: from, lte: to } },
     include: { invoice: { select: { number: true, buyerLegalSnapshot: true } } },
     orderBy: { paidAt: "asc" },
   });
-  return buildPaymentsJournal(
-    payments.map((p) => ({
-      paidAt: p.paidAt,
-      invoiceNumber: p.invoice.number,
-      clientName: (p.invoice.buyerLegalSnapshot as unknown as BuyerSnapshot).name,
-      amountCents: p.amountCents,
-      methodLabel: PAYMENT_METHOD_LABELS[p.method],
-      reference: p.reference,
-    }))
-  );
+  return payments.map((p) => ({
+    paidAt: p.paidAt,
+    invoiceNumber: p.invoice.number,
+    clientName: (p.invoice.buyerLegalSnapshot as unknown as BuyerSnapshot).name,
+    amountCents: p.amountCents,
+    methodLabel: PAYMENT_METHOD_LABELS[p.method],
+    reference: p.reference,
+  }));
+}
+
+export async function loadPaymentsJournal(companyId: string, from: Date, to: Date): Promise<string[][]> {
+  return buildPaymentsJournal(await loadPaymentRows(companyId, from, to));
 }
