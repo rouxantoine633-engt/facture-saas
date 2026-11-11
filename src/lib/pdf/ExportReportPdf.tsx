@@ -4,23 +4,17 @@ import { formatDate } from "@/lib/labels";
 import { accentForText, mix, readableTextOn, tint } from "./colors";
 import { PDF_FONT, PDF_FONT_BOLD, registerPdfFonts } from "./fonts";
 import { formatEurosForPdf, formatRate } from "./format";
+import { fitLogo, REPORT_LOGO_BOX, type PdfLogo } from "./logo";
 import { PAGE_BOTTOM_PADDING, PdfFooter } from "./PdfFooter";
 
 registerPdfFonts();
-
-export interface ReportLogo {
-  data: Buffer;
-  format: "png" | "jpg";
-  width: number;
-  height: number;
-}
 
 interface ReportBase {
   company: {
     legalName: string;
     /** Couleur principale « #rrggbb », déjà validée. */
     brandColor: string;
-    logo?: ReportLogo;
+    logo?: PdfLogo;
     /** Mentions légales de l'émetteur (identique au pied de page des factures). */
     footerLines: string[];
   };
@@ -36,8 +30,6 @@ export const REPORT_TITLES = { SALES: "Journal des ventes", PAYMENTS: "Encaissem
 
 /** Libellé de la période, ex. « du 01/11/2026 au 30/11/2026 ». */
 export const periodLabel = (p: { from: Date; to: Date }) => `du ${formatDate(p.from)} au ${formatDate(p.to)}`;
-
-const LOGO_BOX = { width: 130, height: 44 };
 
 function makeStyles(brand: string) {
   const accentText = accentForText(brand);
@@ -285,8 +277,7 @@ export function ExportReportPdf(input: ExportReportInput) {
   const styles = makeStyles(company.brandColor);
   const title = REPORT_TITLES[input.kind];
   const logo = company.logo;
-  const logoWidth = logo ? Math.min(LOGO_BOX.width, Math.round((LOGO_BOX.height * logo.width) / logo.height)) : 0;
-  const logoHeight = logo ? Math.min(LOGO_BOX.height, Math.round((logoWidth * logo.height) / logo.width)) : 0;
+  const logoSize = logo ? fitLogo(logo, REPORT_LOGO_BOX) : undefined;
   const count = input.report.rows.length;
 
   return (
@@ -301,7 +292,7 @@ export function ExportReportPdf(input: ExportReportInput) {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.brand}>
-            {logo && <Image src={{ data: logo.data, format: logo.format }} style={[styles.logo, { width: logoWidth, height: logoHeight }]} />}
+            {logo && logoSize && <Image src={{ data: logo.data, format: logo.format }} style={[styles.logo, logoSize]} />}
             <Text style={styles.company}>{company.legalName}</Text>
           </View>
           <View style={styles.titleBox}>

@@ -45,8 +45,9 @@ export function LogoUpload({ hasLogo, version }: { hasLogo: boolean; version: nu
         Logo de l'entreprise
       </h2>
       <p className="text-sm text-gray-600">
-        Affiché en en-tête de vos rapports PDF (journal des ventes, encaissements). PNG ou JPEG, {Math.round(MAX_LOGO_BYTES / 1024)} Ko
-        maximum.
+        Affiché en haut à gauche de vos devis, factures et avoirs, et en en-tête de vos rapports PDF. PNG ou JPEG,{" "}
+        {Math.round(MAX_LOGO_BYTES / 1024)} Ko maximum, redimensionné automatiquement sans déformation. Les documents déjà
+        émis affichent le logo actuel lorsqu'on les télécharge à nouveau.
       </p>
 
       {hasLogo && (

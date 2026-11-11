@@ -71,7 +71,7 @@ export default async function ExportPage() {
           </div>
           {!hasLogo && (
             <p className="mt-2 text-sm text-gray-600">
-              Pour personnaliser le rapport PDF, ajoutez votre logo et choisissez votre couleur dans{" "}
+              Pour personnaliser vos documents et vos rapports PDF, ajoutez votre logo dans{" "}
               <Link href="/app/entreprise/configuration" className="text-brand-700 underline">
                 Mon entreprise
               </Link>

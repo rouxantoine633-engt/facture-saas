@@ -1,7 +1,8 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { PdfDocumentData } from "./build-data";
 import { formatEurosForPdf, formatRate } from "./format";
 import { PDF_FONT, PDF_FONT_BOLD, registerPdfFonts } from "./fonts";
+import { DOCUMENT_LOGO_BOX, fitLogo } from "./logo";
 import { PAGE_BOTTOM_PADDING, PdfFooter } from "./PdfFooter";
 
 registerPdfFonts();
@@ -21,7 +22,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: ACCENT,
   },
-  sellerName: { fontSize: 16, fontFamily: PDF_FONT_BOLD, color: ACCENT, maxWidth: 300 },
+  // Logo (s'il y en a un) puis nom : le bloc prend la place restante, le titre à droite garde la sienne.
+  brand: { flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 16 },
+  logo: { marginRight: 12 },
+  sellerName: { fontSize: 16, fontFamily: PDF_FONT_BOLD, color: ACCENT, flex: 1 },
   headerRight: { alignItems: "flex-end" },
   title: { fontSize: 20, fontFamily: PDF_FONT_BOLD, letterSpacing: 1 },
   number: { fontSize: 11, marginTop: 4, color: "#4b5563" },
@@ -80,7 +84,15 @@ export function DocumentPdf({ data }: { data: PdfDocumentData }) {
         {data.isDraft && <Text style={styles.watermark} fixed>BROUILLON</Text>}
 
         <View style={styles.header}>
-          <Text style={styles.sellerName}>{data.sellerName}</Text>
+          <View style={styles.brand}>
+            {data.logo && (
+              <Image
+                src={{ data: data.logo.data, format: data.logo.format }}
+                style={[styles.logo, fitLogo(data.logo, DOCUMENT_LOGO_BOX)]}
+              />
+            )}
+            <Text style={styles.sellerName}>{data.sellerName}</Text>
+          </View>
           <View style={styles.headerRight}>
             <Text style={styles.title}>{data.title}</Text>
             <Text style={styles.number}>{data.numberLabel}</Text>
