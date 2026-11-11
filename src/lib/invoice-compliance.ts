@@ -12,8 +12,14 @@ export interface SellerSnapshot {
   vatNumber?: string | null;
   rcsCity?: string | null;
   rcsNumber?: string | null;
+  /** Répertoire des métiers (artisans) : chambre de métiers et numéro. */
+  rmCity?: string | null;
+  rmNumber?: string | null;
+  /** Code NAF/APE. */
+  nafCode?: string | null;
   shareCapitalCents?: number | null;
   addressLine1: string;
+  addressLine2?: string | null;
   postalCode: string;
   city: string;
   country: string;

@@ -5,6 +5,12 @@ const SIRET_REGEX = /^\d{14}$/;
 
 const LEGAL_FORMS_WITH_RCS = ["EURL", "SARL", "SASU", "SAS"] as const;
 
+/** Code NAF/APE : 4 chiffres et 1 lettre (« 6201Z »). Saisi avec ou sans point, en minuscules ou non. */
+export function normalizeNafCode(value: string): string {
+  return value.replace(/[.\s]/g, "").toUpperCase();
+}
+const NAF_REGEX = /^\d{4}[A-Z]$/;
+
 export const companySchema = z
   .object({
     legalName: z.string().trim().min(1, "La raison sociale est obligatoire"),
@@ -31,8 +37,18 @@ export const companySchema = z
     vatRegime: z.enum(["FRANCHISE_EN_BASE", "REEL_SIMPLIFIE", "REEL_NORMAL"]),
     vatNumber: z.string().trim().optional().or(z.literal("")),
 
+    nafCode: z
+      .string()
+      .transform(normalizeNafCode)
+      .refine((v) => v === "" || NAF_REGEX.test(v), {
+        message: "Le code NAF/APE comporte 4 chiffres et 1 lettre (ex : 6201Z)",
+      })
+      .optional(),
+
     rcsCity: z.string().trim().optional().or(z.literal("")),
     rcsNumber: z.string().trim().optional().or(z.literal("")),
+    rmCity: z.string().trim().optional().or(z.literal("")),
+    rmNumber: z.string().trim().optional().or(z.literal("")),
     shareCapitalEuros: z.coerce.number().nonnegative().optional(),
 
     addressLine1: z.string().trim().min(1, "L'adresse est obligatoire"),
@@ -72,6 +88,22 @@ export const companySchema = z
       });
     }
 
+    // Un numéro d'immatriculation n'a de sens qu'avec son greffe / sa chambre, et inversement.
+    if (!!data.rcsCity !== !!data.rcsNumber) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [data.rcsCity ? "rcsNumber" : "rcsCity"],
+        message: "Indiquez à la fois la ville du greffe et le numéro RCS, ou aucun des deux",
+      });
+    }
+    if (!!data.rmCity !== !!data.rmNumber) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [data.rmCity ? "rmNumber" : "rmCity"],
+        message: "Indiquez à la fois la chambre de métiers (ville) et le numéro du Répertoire des métiers, ou aucun des deux",
+      });
+    }
+
     if (
       LEGAL_FORMS_WITH_RCS.includes(
         data.legalForm as (typeof LEGAL_FORMS_WITH_RCS)[number]
@@ -104,8 +136,8 @@ export const companySchema = z
 export type CompanyInput = z.infer<typeof companySchema>;
 
 export const LEGAL_FORM_LABELS: Record<CompanyInput["legalForm"], string> = {
-  AUTO_ENTREPRENEUR: "Auto-entrepreneur / Micro-entrepreneur",
-  EI: "Entreprise Individuelle (EI)",
+  AUTO_ENTREPRENEUR: "Entrepreneur individuel — micro-entrepreneur",
+  EI: "Entrepreneur individuel (EI)",
   EURL: "EURL",
   SARL: "SARL",
   SASU: "SASU",

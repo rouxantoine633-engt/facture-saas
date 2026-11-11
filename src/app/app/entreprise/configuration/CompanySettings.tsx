@@ -136,31 +136,41 @@ export function CompanySettings({
           </Field>
         </div>
 
-        {rcsRequired && (
-          <div className="grid grid-cols-2 gap-4 rounded-md bg-brand-50 p-4">
-            <Field label="Ville RCS" error={errors.rcsCity?.message} required>
+        <Field
+          label="Code NAF/APE (facultatif)"
+          error={errors.nafCode?.message}
+        >
+          <input {...register("nafCode")} className="input" placeholder="ex : 6201Z" maxLength={6} autoComplete="off" />
+        </Field>
+
+        <fieldset className="space-y-4 rounded-md bg-brand-50 p-4">
+          <legend className="px-1 text-sm font-semibold">Immatriculation</legend>
+          <p className="text-sm text-gray-700">
+            {rcsRequired
+              ? "Le RCS est obligatoire pour votre forme juridique."
+              : "Renseignez le RCS ou le Répertoire des métiers si vous y êtes immatriculé (artisan, commerçant) ; sinon laissez vide."}{" "}
+            Ces mentions figureront en pied de page de vos documents.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Ville du greffe (RCS)" error={errors.rcsCity?.message} required={rcsRequired}>
               <input {...register("rcsCity")} className="input" />
             </Field>
-            <Field label="Numéro RCS" error={errors.rcsNumber?.message} required>
+            <Field label="Numéro RCS" error={errors.rcsNumber?.message} required={rcsRequired}>
               <input {...register("rcsNumber")} className="input" />
             </Field>
-            <div className="col-span-2">
-              <Field
-                label="Capital social (€)"
-                error={errors.shareCapitalEuros?.message}
-                required
-              >
-                <input
-                  {...register("shareCapitalEuros")}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="input"
-                />
-              </Field>
-            </div>
+            <Field label="Chambre de métiers (ville)" error={errors.rmCity?.message}>
+              <input {...register("rmCity")} className="input" />
+            </Field>
+            <Field label="Numéro du Répertoire des métiers" error={errors.rmNumber?.message}>
+              <input {...register("rmNumber")} className="input" />
+            </Field>
           </div>
-        )}
+          {rcsRequired && (
+            <Field label="Capital social (€)" error={errors.shareCapitalEuros?.message} required>
+              <input {...register("shareCapitalEuros")} type="number" step="0.01" min="0" className="input" />
+            </Field>
+          )}
+        </fieldset>
       </section>
 
       <section className="space-y-4">
@@ -333,7 +343,7 @@ function Field({
       </span>
       <div className="mt-1">{children}</div>
       {error && (
-        <span role="alert" className="mt-1 block text-sm text-red-600">
+        <span role="alert" className="mt-1 block text-sm text-red-700">
           {error}
         </span>
       )}

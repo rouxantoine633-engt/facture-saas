@@ -5,8 +5,8 @@ import { OPERATION_CATEGORY_LABELS, type OperationCategory } from "@/lib/operati
 import { formatEurosForPdf } from "./format";
 
 const LEGAL_FORM_LABELS: Record<string, string> = {
-  AUTO_ENTREPRENEUR: "Micro-entrepreneur",
-  EI: "Entreprise individuelle",
+  AUTO_ENTREPRENEUR: "Entrepreneur individuel (micro-entrepreneur)",
+  EI: "Entrepreneur individuel",
   EURL: "EURL",
   SARL: "SARL",
   SASU: "SASU",
@@ -46,22 +46,44 @@ export interface PdfDocumentData {
   vatMention: string;
   mentions: string[];
   bankLines: string[];
-  footerLine: string;
+  /** Mentions légales de l'émetteur, répétées en pied de chaque page. */
+  footerLines: string[];
 }
 
+/** Adresse complète sur une ligne ; le pays n'est précisé que s'il n'est pas la France. */
+function fullAddress(seller: SellerSnapshot): string {
+  const parts = [seller.addressLine1, seller.addressLine2, `${seller.postalCode} ${seller.city}`];
+  if (seller.country && !/^france$/i.test(seller.country.trim())) parts.push(seller.country);
+  return parts.filter(Boolean).join(", ");
+}
+
+/** Bloc « Émetteur » : coordonnées seulement, les mentions légales étant regroupées en pied de page. */
 function sellerIdentityLines(seller: SellerSnapshot): string[] {
-  const form = LEGAL_FORM_LABELS[seller.legalForm];
-  const lines = [
-    seller.legalName + (form ? ` — ${form}` : ""),
-    seller.addressLine1,
-    `${seller.postalCode} ${seller.city}`,
-    `SIREN ${seller.siren} — SIRET ${seller.siret}`,
-  ];
-  if (seller.shareCapitalCents != null) lines.push(`Capital social : ${formatEurosForPdf(seller.shareCapitalCents)}`);
-  if (seller.rcsNumber) lines.push(`RCS ${seller.rcsCity ?? ""} ${seller.rcsNumber}`.trim());
-  lines.push(vatMention(seller));
+  const lines = [seller.legalName, seller.addressLine1];
+  if (seller.addressLine2) lines.push(seller.addressLine2);
+  lines.push(`${seller.postalCode} ${seller.city}`);
+  if (seller.country && !/^france$/i.test(seller.country.trim())) lines.push(seller.country);
   lines.push(seller.email);
   return lines;
+}
+
+/**
+ * Mentions légales obligatoires de l'émetteur, pour le pied de page :
+ * identité et forme juridique, adresse du siège, SIRET, code NAF/APE, immatriculation (RCS ou Répertoire
+ * des métiers) et régime de TVA.
+ */
+export function legalFooterLines(seller: SellerSnapshot): string[] {
+  const form = LEGAL_FORM_LABELS[seller.legalForm];
+  const identity = [seller.legalName + (form ? ` — ${form}` : "")];
+  if (seller.shareCapitalCents != null) identity.push(`au capital de ${formatEurosForPdf(seller.shareCapitalCents)}`);
+  const line1 = `${identity.join(" ")} — Siège : ${fullAddress(seller)}`;
+
+  const registration = [`SIRET ${seller.siret}`];
+  if (seller.nafCode) registration.push(`Code NAF/APE : ${seller.nafCode}`);
+  if (seller.rcsNumber) registration.push(`RCS ${seller.rcsCity ?? ""} ${seller.rcsNumber}`.replace(/\s+/g, " ").trim());
+  if (seller.rmNumber) registration.push(`RM ${seller.rmCity ?? ""} ${seller.rmNumber}`.replace(/\s+/g, " ").trim());
+
+  return [line1, registration.join(" — "), vatMention(seller)];
 }
 
 function buyerIdentityLines(buyer: BuyerSnapshot): string[] {
@@ -135,7 +157,7 @@ export function buildInvoicePdfData(i: InvoicePdfInput): PdfDocumentData {
     vatMention: vatMention(i.seller),
     mentions,
     bankLines: bankLines(i.seller),
-    footerLine: `${i.seller.legalName} — SIRET ${i.seller.siret}`,
+    footerLines: legalFooterLines(i.seller),
   };
 }
 
@@ -175,7 +197,7 @@ export function buildQuotePdfData(q: QuotePdfInput): PdfDocumentData {
     vatMention: vatMention(q.seller),
     mentions,
     bankLines: [],
-    footerLine: `${q.seller.legalName} — SIRET ${q.seller.siret}`,
+    footerLines: legalFooterLines(q.seller),
   };
 }
 
@@ -219,6 +241,6 @@ export function buildCreditNotePdfData(c: CreditNotePdfInput): PdfDocumentData {
       `Cet avoir vient en déduction de la facture n° ${c.invoiceNumber} du ${formatDate(c.invoiceDate)}.`,
     ],
     bankLines: [],
-    footerLine: `${c.seller.legalName} — SIRET ${c.seller.siret}`,
+    footerLines: legalFooterLines(c.seller),
   };
 }
