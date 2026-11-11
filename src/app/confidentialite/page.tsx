@@ -1,204 +1,288 @@
 import type { Metadata } from "next";
-import { LegalLayout, LegalSection, LegalList } from "@/components/legal/LegalLayout";
+import { LegalLayout, LegalSection, LegalList, LegalLink, ToComplete } from "@/components/legal/LegalLayout";
+import { EDITOR, TO_COMPLETE } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité — Onyx",
-  description: "Politique de confidentialité et protection des données personnelles du service Onyx.",
+  title: "Politique de confidentialité",
+  description:
+    "Politique de confidentialité du service Onyx : données collectées, finalités, bases légales, durées de conservation et droits RGPD.",
 };
+
+const TH = "border-b border-white/15 p-3 text-left font-medium text-white";
+const TD = "border-b border-white/10 p-3 align-top";
 
 export default function ConfidentialitePage() {
   return (
-    <LegalLayout title="Politique de confidentialité" updatedAt="30 septembre 2026">
-      <LegalSection title="1. Responsable du traitement">
+    <LegalLayout title="Politique de confidentialité">
+      <LegalSection title="1. Qui est responsable de vos données ?">
         <p>
-          Le responsable du traitement des données à caractère personnel collectées via le service Onyx est{" "}
-          <strong className="text-white">Antoine ROUX</strong>, entrepreneur individuel (SIREN 105 801 179), dont les
-          coordonnées figurent dans les{" "}
-          <a href="/mentions-legales" className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200">
-            mentions légales
-          </a>
-          .
+          Le service Onyx est édité par <strong className="text-white">{EDITOR.name}</strong>, {EDITOR.status} (SIREN{" "}
+          {EDITOR.siren}), {EDITOR.address}. Il intervient sous deux qualités :
+        </p>
+        <LegalList
+          items={[
+            <>
+              <strong className="text-white">Responsable de traitement</strong> pour les données de votre compte, de
+              votre entreprise et de votre abonnement ;
+            </>,
+            <>
+              <strong className="text-white">Sous-traitant</strong> pour les données de vos propres clients (nom,
+              adresse, email, téléphone, factures) que vous saisissez : vous en êtes le responsable de traitement, et
+              Onyx les traite uniquement pour vous fournir le Service et selon vos instructions. Il vous appartient
+              d’informer vos clients de ce traitement.
+            </>,
+          ]}
+        />
+        <p>
+          Aucun délégué à la protection des données n’est désigné. Contact pour toute question :{" "}
+          <LegalLink href={`mailto:${EDITOR.email}`}>{EDITOR.email}</LegalLink>.
         </p>
       </LegalSection>
 
-      <LegalSection title="2. Données collectées">
-        <p>Selon votre usage du Service, les données suivantes peuvent être collectées :</p>
-        <LegalList
-          items={[
-            <>
-              <strong className="text-white">Compte utilisateur</strong> : nom, adresse email, mot de passe
-              (stocké sous forme hachée, jamais en clair).
-            </>,
-            <>
-              <strong className="text-white">Profil entreprise</strong> : raison sociale, forme juridique, SIREN/
-              SIRET, régime de TVA, adresse, coordonnées bancaires (IBAN/BIC), utilisés pour faire figurer les
-              mentions légales obligatoires sur vos devis et factures.
-            </>,
-            <>
-              <strong className="text-white">Données de vos propres clients</strong> : nom ou raison sociale,
-              adresse, email, téléphone, que vous saisissez pour émettre vos devis et factures.
-            </>,
-            <>
-              <strong className="text-white">Données de facturation de l&apos;abonnement</strong> : gérées
-              directement par Stripe, notre prestataire de paiement — Onyx ne stocke jamais vos coordonnées
-              bancaires personnelles.
-            </>,
-            <>
-              <strong className="text-white">Données techniques</strong> : journal des actions effectuées sur vos
-              documents (audit log), à des fins de traçabilité et de sécurité.
-            </>,
-          ]}
-        />
-      </LegalSection>
-
-      <LegalSection title="3. Finalités du traitement">
-        <LegalList
-          items={[
-            "Fournir et faire fonctionner le Service (création de compte, génération des devis/factures/avoirs, envoi d'emails, relances de paiement).",
-            "Gérer l'abonnement et la facturation via Stripe.",
-            "Assurer la sécurité du Service et prévenir les usages frauduleux.",
-            "Répondre à nos obligations légales, notamment la conservation des documents comptables pendant la durée requise par la loi.",
-          ]}
-        />
-      </LegalSection>
-
-      <LegalSection title="4. Base légale">
+      <LegalSection title="2. Principe de minimisation">
         <p>
-          Les traitements décrits ci-dessus reposent sur l&apos;exécution du contrat qui vous lie à Onyx
-          (fourniture du Service), sur le respect d&apos;obligations légales (conservation des factures) et, le cas
-          échéant, sur l&apos;intérêt légitime de l&apos;Éditeur à assurer la sécurité et le bon fonctionnement du
-          Service.
+          Onyx ne collecte que les données nécessaires pour émettre des devis et des factures, suivre les paiements et
+          gérer l’abonnement. <strong className="text-white">Aucun outil de mesure d’audience, de suivi
+          publicitaire ou de profilage n’est utilisé</strong>, aucun script tiers n’est chargé sur le site, et les
+          polices de caractères sont hébergées par Onyx (aucune requête vers un service de polices externe). Les champs
+          facultatifs (téléphone, notes, IBAN, etc.) ne sont jamais exigés pour utiliser le Service.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="3. Données collectées">
+        <LegalList
+          items={[
+            <>
+              <strong className="text-white">Compte</strong> : nom, adresse email, mot de passe (conservé uniquement
+              sous forme hachée), date et version des conditions acceptées à l’inscription (preuve de votre accord).
+              Si vous vous connectez avec Google, nous recevons votre nom et votre adresse email ; aucun jeton d’accès
+              Google n’est conservé.
+            </>,
+            <>
+              <strong className="text-white">Entreprise</strong> : raison sociale, forme juridique, SIREN/SIRET, régime
+              de TVA, adresse, email, éventuellement téléphone et coordonnées bancaires (IBAN/BIC) : mentions
+              obligatoires ou utiles de vos factures.
+            </>,
+            <>
+              <strong className="text-white">Vos clients</strong> : nom ou raison sociale, adresse, SIRET pour un client
+              professionnel, et, de façon facultative, email, téléphone et notes ; ainsi que les devis, factures, avoirs
+              et paiements correspondants.
+            </>,
+            <>
+              <strong className="text-white">Abonnement</strong> : identifiants client et abonnement Stripe et statut de
+              l’abonnement. Vos coordonnées bancaires sont saisies sur la page sécurisée de Stripe et ne sont jamais
+              reçues ni conservées par Onyx.
+            </>,
+            <>
+              <strong className="text-white">Journal d’activité</strong> : trace des actions importantes (émission d’une
+              facture, envoi d’un email, modification de l’entreprise) à des fins de preuve et de sécurité.
+            </>,
+            <>
+              <strong className="text-white">Données techniques</strong> : l’hébergeur peut journaliser temporairement
+              des informations de connexion (adresse IP, date) nécessaires à la sécurité et au fonctionnement du site.
+            </>,
+          ]}
+        />
+      </LegalSection>
+
+      <LegalSection title="4. Finalités et bases légales">
+        <div className="overflow-x-auto rounded-lg border border-white/10">
+          <table className="w-full min-w-[34rem] border-collapse text-sm">
+            <caption className="sr-only">Finalités des traitements et base légale de chacun</caption>
+            <thead>
+              <tr>
+                <th scope="col" className={TH}>
+                  Finalité
+                </th>
+                <th scope="col" className={TH}>
+                  Base légale (RGPD)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Créer et gérer votre compte, fournir le Service (devis, factures, relances, exports)
+                </th>
+                <td className={TD}>Exécution du contrat (art. 6.1.b)</td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Gérer l’abonnement et son paiement
+                </th>
+                <td className={TD}>Exécution du contrat (art. 6.1.b)</td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Conserver les factures et avoirs émis pendant 10 ans, tenir la comptabilité de l’abonnement
+                </th>
+                <td className={TD}>Obligation légale (art. 6.1.c ; art. L123-22 du Code de commerce)</td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Sécurité du Service, prévention de la fraude, journal d’activité, preuve de l’acceptation des
+                  conditions
+                </th>
+                <td className={TD}>Intérêt légitime (art. 6.1.f)</td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Cookies strictement nécessaires à la connexion
+                </th>
+                <td className={TD}>Exemptés de consentement (voir la politique de cookies)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Aucune de ces finalités ne repose sur votre consentement, et aucune décision automatisée produisant des effets
+          juridiques n’est prise à votre égard. La fourniture des données de votre compte et de votre entreprise est
+          nécessaire au Service : sans elles, nous ne pouvons pas émettre de factures conformes.
         </p>
       </LegalSection>
 
       <LegalSection title="5. Destinataires et sous-traitants">
-        <p>Vos données peuvent être transmises aux prestataires suivants, dans la stricte mesure nécessaire à leur mission :</p>
+        <p>
+          Vos données ne sont ni vendues, ni louées, ni cédées à des fins commerciales ou publicitaires. Elles sont
+          transmises, dans la stricte mesure nécessaire, aux prestataires suivants :
+        </p>
         <LegalList
           items={[
             <>
-              <strong className="text-white">Stripe</strong> : traitement des paiements et gestion de
-              l&apos;abonnement.
+              <strong className="text-white">Stripe</strong> : paiement et gestion de l’abonnement.
             </>,
             <>
               <strong className="text-white">Brevo</strong> : envoi des emails transactionnels (devis, factures,
-              relances) en votre nom.
+              relances) que vous déclenchez ; l’email contient le document PDF de votre client.
             </>,
             <>
-              <strong className="text-white">Hébergeur</strong> : hébergement du site et de la base de données
-              (voir les{" "}
-              <a href="/mentions-legales" className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200">
-                mentions légales
-              </a>
-              ).
+              <strong className="text-white">Hébergeur</strong> : <ToComplete>{TO_COMPLETE.hostName}</ToComplete> pour le
+              site et <ToComplete>{TO_COMPLETE.databaseHost}</ToComplete> pour la base de données (voir les{" "}
+              <LegalLink href="/mentions-legales">mentions légales</LegalLink>).
             </>,
           ]}
         />
         <p>
-          <strong className="text-white">Vos données ne sont jamais vendues, louées ou cédées à des tiers à des
-          fins commerciales ou publicitaires.</strong>
+          Chaque prestataire intervient en qualité de sous-traitant au sens du RGPD. Hors obligation légale ou demande
+          d’une autorité compétente, personne d’autre n’accède à vos données.
         </p>
       </LegalSection>
 
-      <LegalSection title="6. Durée de conservation">
+      <LegalSection title="6. Transferts hors Union européenne">
         <p>
-          Vos données de compte et de profil sont conservées tant que votre compte est actif. En cas de suppression
-          de votre compte :
+          Certains prestataires (Stripe, l’hébergeur) peuvent traiter des données hors de l’Union européenne,
+          notamment aux États-Unis. Ces transferts sont encadrés par les garanties prévues par le RGPD : décision
+          d’adéquation de la Commission européenne ou clauses contractuelles types.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="7. Durées de conservation">
+        <div className="overflow-x-auto rounded-lg border border-white/10">
+          <table className="w-full min-w-[34rem] border-collapse text-sm">
+            <caption className="sr-only">Durée de conservation par catégorie de données</caption>
+            <thead>
+              <tr>
+                <th scope="col" className={TH}>
+                  Données
+                </th>
+                <th scope="col" className={TH}>
+                  Durée
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Compte, entreprise, clients, brouillons et devis
+                </th>
+                <td className={TD}>Tant que le compte est actif ; supprimés avec le compte.</td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Factures et avoirs émis
+                </th>
+                <td className={TD}>
+                  10 ans à compter de leur émission, y compris après suppression du compte (alors anonymisé).
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Pièces comptables de l’abonnement
+                </th>
+                <td className={TD}>10 ans (obligation comptable).</td>
+              </tr>
+              <tr>
+                <th scope="row" className={`${TD} text-left font-normal text-white`}>
+                  Cookie de session de connexion
+                </th>
+                <td className={TD}>30 jours au plus (voir la politique de cookies).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          À la suppression du compte, si vous n’avez émis ni facture ni avoir, toutes vos données sont effacées
+          immédiatement et définitivement. Sinon, votre identité, vos coordonnées et votre mot de passe sont anonymisés
+          et votre connexion est révoquée ; les factures et avoirs conservent les mentions qu’ils portaient à leur
+          émission. La suppression du compte met aussi fin à votre abonnement.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="8. Sécurité">
+        <p>
+          Les mots de passe sont hachés ; les échanges sont chiffrés (HTTPS) ; l’accès aux données est limité à votre
+          compte ; les factures émises sont verrouillées contre toute modification. Les paiements sont traités
+          exclusivement par Stripe.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="9. Vos droits">
+        <p>
+          Vous disposez, sur vos données, des droits d’accès, de rectification, d’effacement, de limitation,
+          d’opposition et de portabilité, ainsi que du droit de définir des directives relatives à leur sort après
+          votre décès.
         </p>
         <LegalList
           items={[
-            "Si vous n'avez émis aucun devis ni facture, l'ensemble de vos données est supprimé immédiatement et définitivement.",
             <>
-              Si vous avez émis au moins une facture ou un avoir, la loi impose leur conservation pendant{" "}
-              <strong className="text-white">10 ans</strong> (article L123-22 du Code de commerce) : vos
-              informations personnelles (identité, coordonnées, mot de passe) sont alors anonymisées, tandis que
-              les factures et avoirs déjà émis restent conservés avec les mentions qu&apos;ils portaient au moment
-              de leur émission, sans donnée vous concernant au-delà de ce qui y figurait déjà.
-            </>,
-          ]}
-        />
-      </LegalSection>
-
-      <LegalSection title="7. Sécurité">
-        <p>
-          Les mots de passe sont hachés (jamais stockés en clair), les échanges avec le Service sont chiffrés
-          (HTTPS), et l&apos;accès à vos données est strictement réservé à votre compte. Les paiements sont traités
-          exclusivement par Stripe, qui répond aux standards de sécurité du secteur bancaire (norme PCI-DSS).
-        </p>
-      </LegalSection>
-
-      <LegalSection title="8. Vos droits">
-        <p>
-          Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et
-          Libertés, vous disposez des droits suivants sur vos données personnelles : accès, rectification,
-          effacement, limitation, opposition et portabilité.
-        </p>
-        <LegalList
-          items={[
-            <>
-              <strong className="text-white">Accès et portabilité</strong> : téléchargez à tout moment une copie
-              complète de vos données (profil, entreprise, clients, devis, factures, avoirs) au format JSON depuis
-              la page « Mes données » de votre compte.
+              <strong className="text-white">Accès et portabilité</strong> : téléchargez une copie complète de vos
+              données au format JSON depuis la page « Mes données ».
             </>,
             <>
-              <strong className="text-white">Rectification</strong> : modifiez votre profil et vos informations
-              d&apos;entreprise directement depuis votre compte.
+              <strong className="text-white">Rectification</strong> : modifiez votre profil, votre entreprise et vos
+              clients directement dans l’application.
             </>,
             <>
-              <strong className="text-white">Effacement</strong> : supprimez votre compte depuis la page « Mes
-              données » (suppression totale ou anonymisation selon les obligations de conservation légale
-              détaillées ci-dessus).
+              <strong className="text-white">Effacement</strong> : supprimez votre compte depuis « Mes données »
+              (suppression ou anonymisation selon les obligations de conservation ci-dessus).
             </>,
             <>
-              <strong className="text-white">Réclamation</strong> : vous pouvez introduire une réclamation auprès
-              de la Commission Nationale de l&apos;Informatique et des Libertés (CNIL) — <span className="text-white">www.cnil.fr</span>.
+              <strong className="text-white">Autres demandes</strong> : écrivez à{" "}
+              <LegalLink href={`mailto:${EDITOR.email}`}>{EDITOR.email}</LegalLink>. Nous répondons dans un délai
+              d’un mois.
             </>,
           ]}
         />
         <p>
-          Pour toute demande ne pouvant être satisfaite directement depuis votre compte, contactez-nous à{" "}
-          <a
-            href="mailto:roux.antoine633@gmail.com"
-            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
-          >
-            roux.antoine633@gmail.com
-          </a>
-          .
+          Si vous êtes le client d’un utilisateur d’Onyx, adressez vos demandes à ce dernier, responsable du traitement
+          de vos données ; nous l’assisterons pour y répondre. Vous pouvez enfin introduire une réclamation auprès de la
+          Commission nationale de l’informatique et des libertés (CNIL) :{" "}
+          <LegalLink href="https://www.cnil.fr">www.cnil.fr</LegalLink>.
         </p>
       </LegalSection>
 
-      <LegalSection title="9. Cookies">
+      <LegalSection title="10. Cookies">
         <p>
-          Le Service utilise uniquement des cookies strictement nécessaires à son fonctionnement (maintien de votre
-          session de connexion). Aucun cookie de suivi publicitaire ou de mesure d&apos;audience tiers n&apos;est
-          déposé.
+          Onyx dépose uniquement des cookies strictement nécessaires à la connexion, exemptés de consentement. Aucun
+          cookie de mesure d’audience ou de publicité n’est utilisé. Le détail figure dans la{" "}
+          <LegalLink href="/cookies">Politique de cookies</LegalLink>.
         </p>
       </LegalSection>
 
-      <LegalSection title="10. Transferts hors Union européenne">
+      <LegalSection title="11. Modification de cette politique">
         <p>
-          Certains de nos prestataires (Stripe, Brevo, hébergeur) peuvent être amenés à traiter des données en
-          dehors de l&apos;Union européenne. Le cas échéant, ces transferts sont encadrés par les garanties prévues
-          par le RGPD, notamment les clauses contractuelles types de la Commission européenne.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="11. Modification de la présente politique">
-        <p>
-          Cette politique de confidentialité peut être mise à jour pour refléter l&apos;évolution du Service ou de
-          la réglementation. La date de dernière mise à jour figure en haut de cette page.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="12. Contact">
-        <p>
-          Pour toute question relative à la protection de vos données :{" "}
-          <a
-            href="mailto:roux.antoine633@gmail.com"
-            className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
-          >
-            roux.antoine633@gmail.com
-          </a>
-          .
+          Cette politique peut évoluer avec le Service ou la réglementation ; la date de dernière mise à jour figure en
+          haut de la page. Toute modification importante est portée à la connaissance des utilisateurs.
         </p>
       </LegalSection>
     </LegalLayout>

@@ -8,6 +8,10 @@ export const registerSchema = z.object({
   password: z
     .string()
     .min(10, "Le mot de passe doit contenir au moins 10 caractères"),
+  // Valeur d'une case à cocher HTML cochée ; absente sinon.
+  acceptTerms: z.literal("on", {
+    errorMap: () => ({ message: "Vous devez accepter les CGU et les CGV pour créer un compte." }),
+  }),
 });
 
 export const loginSchema = z.object({

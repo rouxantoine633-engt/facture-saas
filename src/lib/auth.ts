@@ -4,11 +4,12 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { minimizedAdapter } from "@/lib/auth-adapter";
 
 // Note : le provider Credentials impose une session JWT (le PrismaAdapter
 // reste utile pour la liaison des comptes OAuth Google et le stockage users).
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: minimizedAdapter(PrismaAdapter(prisma)),
   session: { strategy: "jwt" },
   providers: [
     Google({

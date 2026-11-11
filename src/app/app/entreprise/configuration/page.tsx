@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getCompanyAction } from "./actions";
 import { CompanySettings } from "./CompanySettings";
 import type { CompanyInput } from "@/lib/validation/company";
+
+export const metadata: Metadata = { title: "Mon entreprise" };
 
 export default async function CompanyConfigurationPage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
@@ -6,6 +7,8 @@ import { displayInvoiceStatus, formatDate } from "@/lib/labels";
 import { InvoiceStatusBadge } from "@/components/InvoiceStatusBadge";
 import { ReminderButton } from "@/components/ReminderButton";
 import { sendInvoiceReminderAction } from "./actions";
+
+export const metadata: Metadata = { title: "Factures" };
 
 export default async function InvoicesPage({
   searchParams,
@@ -67,7 +70,9 @@ export default async function InvoicesPage({
                 <th scope="col" className="p-3">Statut</th>
                 <th scope="col" className="p-3 text-right">Total TTC</th>
                 <th scope="col" className="p-3"><span className="sr-only">Télécharger le PDF</span></th>
-                <th scope="col" className="p-3" />
+                <th scope="col" className="p-3">
+                  <span className="sr-only">Relance de paiement</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

@@ -85,7 +85,7 @@ function Nav() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm text-white/60 md:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-8 text-sm text-white/60 md:flex">
           <a href="#fonctionnalites" className="transition-colors hover:text-white">
             Fonctionnalités
           </a>
@@ -166,7 +166,7 @@ function Hero() {
           className={`${display.className} text-balance text-5xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl`}
         >
           La facturation,{" "}
-          <span className="bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent">
             enfin claire.
           </span>
         </motion.h1>
@@ -177,7 +177,7 @@ function Hero() {
           transition={{ duration: 0.9, delay: 0.22, ease: EASE }}
           className="mt-6 max-w-2xl text-balance text-lg text-white/60 sm:text-xl"
         >
-          Onyx transforme vos devis en factures conformes en un clic, suit vos paiements et relance
+          Onyx transforme vos devis en factures complètes en un clic, suit vos paiements et relance
           vos clients automatiquement. Sans jargon comptable, sans friction.
         </motion.p>
 
@@ -201,8 +201,8 @@ function Hero() {
           </a>
         </motion.div>
 
-        <p className="mt-5 text-xs text-white/40">
-          Sans engagement · Annulation en un clic · Paiement sécurisé par Stripe
+        <p className="mt-5 text-xs text-white/60">
+          Sans engagement · Résiliable à tout moment · Paiement sécurisé par Stripe
         </p>
       </motion.div>
 
@@ -230,7 +230,7 @@ function HeroMockup() {
             <div
               key={item}
               className={`rounded-lg px-3 py-2 text-xs ${
-                i === 3 ? "bg-white/10 text-white" : "text-white/40"
+                i === 3 ? "bg-white/10 text-white" : "text-white/60"
               }`}
             >
               {item}
@@ -240,7 +240,7 @@ function HeroMockup() {
         <div className="p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <p className="text-xs text-white/40">Facture n°2026-014</p>
+              <p className="text-xs text-white/60">Facture n°2026-014</p>
               <p className="mt-1 text-lg font-semibold text-white">Studio Lumière</p>
             </div>
             <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
@@ -263,7 +263,7 @@ function HeroMockup() {
             ))}
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-            <span className="text-sm text-white/50">Total TTC</span>
+            <span className="text-sm text-white/60">Total TTC</span>
             <span className={`${display.className} text-2xl font-semibold text-white`}>1 525,00 €</span>
           </div>
         </div>
@@ -293,9 +293,9 @@ const FEATURES = [
     metricLabel: "pour créer un devis",
   },
   {
-    title: "Factures conformes",
+    title: "Factures complètes",
     description:
-      "Numérotation séquentielle, mentions légales, TVA par ligne : chaque facture respecte le cadre légal français, automatiquement.",
+      "Numérotation séquentielle, mentions légales obligatoires, TVA par ligne : Onyx contrôle que chaque facture est complète avant de l’émettre.",
     icon: (
       <path
         strokeLinecap="round"
@@ -305,7 +305,7 @@ const FEATURES = [
       />
     ),
     metric: "100%",
-    metricLabel: "conforme au cadre légal",
+    metricLabel: "contrôlées avant émission",
   },
   {
     title: "Suivi des paiements",
@@ -341,7 +341,7 @@ function FeaturesSticky() {
     <section id="fonctionnalites" className="relative">
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-32">
         <Reveal>
-          <p className="text-sm font-medium text-indigo-300/80">Fonctionnalités</p>
+          <p className="text-sm font-medium text-indigo-300">Fonctionnalités</p>
           <h2 className={`${display.className} mt-3 max-w-xl text-4xl font-semibold tracking-tight text-white sm:text-5xl`}>
             Tout ce qu&apos;il faut, rien de superflu.
           </h2>
@@ -353,17 +353,12 @@ function FeaturesSticky() {
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 md:grid-cols-2">
             <div className="space-y-3">
               {FEATURES.map((feature, i) => (
-                <button
-                  key={feature.title}
-                  type="button"
-                  className="block w-full text-left"
-                  tabIndex={-1}
-                >
+                <div key={feature.title} className="block w-full text-left" aria-current={active === i ? "true" : undefined}>
                   <div
                     className={`rounded-2xl border px-6 py-5 transition-all duration-500 ${
                       active === i
                         ? "border-white/15 bg-white/[0.06]"
-                        : "border-transparent opacity-40"
+                        : "border-transparent opacity-70"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -391,7 +386,7 @@ function FeaturesSticky() {
                       )}
                     </AnimatePresence>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
 
@@ -416,7 +411,7 @@ function FeaturesSticky() {
                   <p className={`${display.className} mt-6 text-4xl font-semibold text-white`}>
                     {FEATURES[active]?.metric}
                   </p>
-                  <p className="mt-2 text-sm text-white/50">{FEATURES[active]?.metricLabel}</p>
+                  <p className="mt-2 text-sm text-white/60">{FEATURES[active]?.metricLabel}</p>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -444,7 +439,7 @@ function MockupParallax() {
       <GradientOrb className="left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 bg-indigo-500/10" duration={30} />
       <div className="relative mx-auto max-w-3xl px-6 text-center">
         <Reveal>
-          <p className="text-sm font-medium text-indigo-300/80">Aperçu</p>
+          <p className="text-sm font-medium text-indigo-300">Aperçu</p>
           <h2 className={`${display.className} mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl`}>
             Une interface qui respire.
           </h2>
@@ -465,16 +460,16 @@ function MockupParallax() {
                 { label: "Devis en cours", value: "7", trend: "62% taux de conversion" },
               ].map((stat) => (
                 <div key={stat.label} className="bg-[#0b0b0e] p-6">
-                  <p className="text-xs text-white/40">{stat.label}</p>
+                  <p className="text-xs text-white/60">{stat.label}</p>
                   <p className={`${display.className} mt-2 text-2xl font-semibold text-white`}>{stat.value}</p>
-                  <p className="mt-1 text-xs text-emerald-300/80">{stat.trend}</p>
+                  <p className="mt-1 text-xs text-emerald-300">{stat.trend}</p>
                 </div>
               ))}
             </div>
             <div className="mt-px overflow-hidden rounded-xl bg-[#0b0b0e]">
               <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
                 <p className="text-sm font-medium text-white">Activité récente</p>
-                <span className="text-xs text-white/40">Cette semaine</span>
+                <span className="text-xs text-white/60">Cette semaine</span>
               </div>
               <div className="divide-y divide-white/5">
                 {[
@@ -485,7 +480,7 @@ function MockupParallax() {
                   <div key={ref} className="flex items-center justify-between px-6 py-4 text-sm">
                     <div>
                       <p className="text-white/85">{ref}</p>
-                      <p className="text-xs text-white/40">{client}</p>
+                      <p className="text-xs text-white/60">{client}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-white/70">{amount}</span>
@@ -519,7 +514,7 @@ function MockupParallax() {
 const PRICING_FEATURES = [
   "Devis et factures illimités",
   "Conversion devis → facture en un clic",
-  "PDF conformes, prêts à envoyer",
+  "PDF avec mentions obligatoires, prêts à envoyer",
   "Relances de paiement automatiques",
   "Avoirs et export comptable",
   "Support par email prioritaire",
@@ -531,7 +526,7 @@ function Pricing() {
       <GradientOrb className="-left-20 top-1/3 h-96 w-96 bg-fuchsia-500/10" duration={24} />
       <div className="mx-auto max-w-2xl px-6 text-center">
         <Reveal>
-          <p className="text-sm font-medium text-indigo-300/80">Tarifs</p>
+          <p className="text-sm font-medium text-indigo-300">Tarifs</p>
           <h2 className={`${display.className} mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl`}>
             Un seul prix. Tout est inclus.
           </h2>
@@ -549,9 +544,9 @@ function Pricing() {
             />
             <div className="relative flex items-baseline gap-2">
               <span className={`${display.className} text-6xl font-semibold text-white`}>39€</span>
-              <span className="text-white/50">/ mois</span>
+              <span className="text-white/60">/ mois</span>
             </div>
-            <p className="mt-2 text-sm text-white/50">Sans engagement · résiliable en un clic</p>
+            <p className="mt-2 text-sm text-white/60">Sans engagement · résiliable à tout moment · TVA non applicable, art. 293 B du CGI</p>
 
             <ul className="mt-8 space-y-3">
               {PRICING_FEATURES.map((item) => (
@@ -570,7 +565,12 @@ function Pricing() {
             >
               Démarrer mon abonnement
             </Link>
-            <p className="mt-4 text-center text-xs text-white/40">Paiement sécurisé par Stripe</p>
+            <p className="mt-4 text-center text-xs text-white/60">
+              Paiement sécurisé par Stripe ·{" "}
+              <Link href="/cgv" className="underline underline-offset-2 hover:text-white">
+                CGV, rétractation et remboursement
+              </Link>
+            </p>
           </div>
         </Reveal>
       </div>
@@ -612,10 +612,10 @@ function FinalCta() {
 
 export function LandingPage() {
   return (
-    <div className={`${inter.variable} ${display.variable} min-h-screen bg-[#07070a] font-sans text-white antialiased`}>
+    <div className={`${inter.variable} ${display.variable} on-dark min-h-screen bg-[#07070a] font-sans text-white antialiased`}>
       <ScrollProgress />
       <Nav />
-      <main>
+      <main id="contenu">
         <Hero />
         <FeaturesSticky />
         <MockupParallax />

@@ -34,7 +34,7 @@ function Tile({ kpi, index }: { kpi: KpiItem; index: number }) {
         kpi.href ? "transition-colors hover:border-white/20" : ""
       }`}
     >
-      <p className="text-sm text-white/50">{kpi.label}</p>
+      <p className="text-sm text-white/60">{kpi.label}</p>
       <p className={`${display.className} mt-2 text-3xl font-semibold text-white`}>{kpi.value}</p>
       {kpi.deltaLabel && (
         <p
@@ -43,7 +43,7 @@ function Tile({ kpi, index }: { kpi: KpiItem; index: number }) {
               ? "text-emerald-400"
               : kpi.deltaTone === "bad"
                 ? "text-red-400"
-                : "text-white/40"
+                : "text-white/60"
           }`}
         >
           {kpi.deltaLabel}

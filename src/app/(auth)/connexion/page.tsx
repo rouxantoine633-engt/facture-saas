@@ -72,7 +72,7 @@ function ConnexionForm() {
           />
         </div>
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-sm text-red-700">
             {error}
           </p>
         )}
@@ -84,9 +84,9 @@ function ConnexionForm() {
           {pending ? "Connexion…" : "Se connecter"}
         </button>
       </form>
-      <p className="mt-4 text-sm text-gray-600">
+      <p className="mt-4 text-sm text-gray-700">
         Pas encore de compte ?{" "}
-        <Link href="/inscription" className="text-brand-600 underline">
+        <Link href="/inscription" className="text-brand-700 underline">
           Créer un compte
         </Link>
       </p>

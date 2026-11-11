@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
 import { formatDate, QUOTE_STATUS_LABELS } from "@/lib/labels";
+
+export const metadata: Metadata = { title: "Devis" };
 
 export default async function QuotesPage() {
   const { company } = await requireActiveCompany();

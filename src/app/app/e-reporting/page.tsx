@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
@@ -6,6 +7,8 @@ import { parseExportRange } from "@/lib/export/range";
 import { loadEReporting } from "@/lib/ereporting/load";
 import { EREPORTING_CATEGORY_LABELS } from "@/lib/ereporting/categories";
 import { periodPresets } from "@/lib/ereporting/periods";
+
+export const metadata: Metadata = { title: "E-reporting" };
 
 const rateLabel = (ratePer100000: number) => `${(ratePer100000 / 1000).toLocaleString("fr-FR")} %`;
 const dateLabel = (isoDay: string) => formatDate(new Date(`${isoDay}T00:00:00Z`));

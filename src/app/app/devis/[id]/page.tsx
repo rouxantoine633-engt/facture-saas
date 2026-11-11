@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,8 @@ import { ActionButton } from "@/components/ActionButton";
 import { convertQuoteAction } from "../actions";
 import { SendEmailForm } from "@/components/SendEmailForm";
 import { QuoteStatusForm } from "./QuoteStatusForm";
+
+export const metadata: Metadata = { title: "Devis" };
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

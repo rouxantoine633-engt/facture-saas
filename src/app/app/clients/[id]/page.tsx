@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,8 @@ import { requireActiveCompany } from "@/lib/session";
 import { formatDate } from "@/lib/labels";
 import { ClientForm } from "../ClientForm";
 import { updateClientAction } from "../actions";
+
+export const metadata: Metadata = { title: "Fiche client" };
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

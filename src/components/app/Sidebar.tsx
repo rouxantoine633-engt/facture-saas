@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Briefcase,
@@ -116,10 +116,10 @@ function ItemRow({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
   if (item.kind === "disabled") {
     return (
-      <div className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/25">
+      <div className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/50">
         <Icon className="h-4 w-4 shrink-0" />
         <span className="flex-1">{item.label}</span>
-        <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/30">
+        <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/50">
           {item.badge}
         </span>
       </div>
@@ -185,7 +185,7 @@ function StaticSection({ section, pathname }: { section: NavStatic; pathname: st
   const Icon = section.icon;
   return (
     <div>
-      <p className="flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wide text-white/30">
+      <p className="flex items-center gap-2 px-3 text-xs font-semibold uppercase tracking-wide text-white/60">
         <Icon className="h-3.5 w-3.5 shrink-0" />
         {section.label}
       </p>
@@ -227,20 +227,38 @@ function NavContent({ pathname }: { pathname: string }) {
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Tiroir mobile accessible au clavier : Échap le ferme, le focus entre dans le tiroir à l'ouverture
+  // et revient sur le bouton d'ouverture à la fermeture.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    closeButtonRef.current?.focus();
+    const opener = openButtonRef.current;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      opener?.focus();
+    };
+  }, [mobileOpen]);
 
   return (
     <>
-      <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:bg-white focus:p-2">
-        Aller au contenu
-      </a>
 
       {/* Barre mobile : logo + bouton menu, visible uniquement en dessous de sm */}
-      <div className="flex items-center justify-between border-b border-white/10 bg-[#07070a] px-4 py-3 sm:hidden">
+      <div className="on-dark flex items-center justify-between border-b border-white/10 bg-[#07070a] px-4 py-3 sm:hidden">
         <span className="text-sm font-semibold tracking-tight text-white">Onyx</span>
         <button
+          ref={openButtonRef}
           type="button"
           onClick={() => setMobileOpen(true)}
           aria-label="Ouvrir le menu"
+          aria-expanded={mobileOpen}
+          aria-controls="menu-mobile"
           className="rounded-md p-1.5 text-white/70 hover:bg-white/10 hover:text-white"
         >
           <Menu className="h-5 w-5" />
@@ -248,7 +266,7 @@ export function Sidebar() {
       </div>
 
       {/* Sidebar fixe desktop */}
-      <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-[#07070a] px-3 py-6 sm:block">
+      <aside className="on-dark hidden w-64 shrink-0 border-r border-white/10 bg-[#07070a] px-3 py-6 sm:block">
         <div className="px-3 pb-6">
           <span className="text-sm font-semibold tracking-tight text-white">Onyx</span>
         </div>
@@ -269,15 +287,20 @@ export function Sidebar() {
               aria-hidden
             />
             <motion.aside
+              id="menu-mobile"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu de navigation"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: EASE }}
-              className="fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto border-r border-white/10 bg-[#07070a] px-3 py-6 sm:hidden"
+              className="on-dark fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto border-r border-white/10 bg-[#07070a] px-3 py-6 sm:hidden"
             >
               <div className="flex items-center justify-between px-3 pb-6">
                 <span className="text-sm font-semibold tracking-tight text-white">Onyx</span>
                 <button
+                  ref={closeButtonRef}
                   type="button"
                   onClick={() => setMobileOpen(false)}
                   aria-label="Fermer le menu"

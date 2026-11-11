@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { QuoteForm, type QuoteFormInitial } from "@/components/QuoteForm";
 import { updateQuoteAction } from "../../actions";
+
+export const metadata: Metadata = { title: "Modifier le devis" };
 
 function centsToEurosInput(cents: number): string {
   return `${Math.trunc(cents / 100)},${String(cents % 100).padStart(2, "0")}`;
