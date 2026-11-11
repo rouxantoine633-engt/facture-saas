@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("pied de page des PDF", () => {
-  const source = readFileSync(path.resolve(__dirname, "DocumentPdf.tsx"), "utf-8");
+  const source = readFileSync(path.resolve(__dirname, "PdfFooter.tsx"), "utf-8");
   const footerStyles = source.slice(source.indexOf("footer: {"), source.indexOf("// Pas de `lineHeight`"));
 
   it("n'utilise pas `lineHeight` sur le bloc en position absolue", () => {
@@ -14,6 +14,9 @@ describe("pied de page des PDF", () => {
   });
 
   it("réserve sous le contenu la place des mentions légales (jusqu'à 4 lignes)", () => {
-    expect(source).toMatch(/paddingBottom: (9\d|1\d\d)/);
+    expect(source).toMatch(/PAGE_BOTTOM_PADDING = (9\d|1\d\d)/);
+    for (const file of ["DocumentPdf.tsx", "ExportReportPdf.tsx"]) {
+      expect(readFileSync(path.resolve(__dirname, file), "utf-8"), file).toContain("PAGE_BOTTOM_PADDING");
+    }
   });
 });

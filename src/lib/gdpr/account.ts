@@ -96,8 +96,11 @@ export async function closeAccount(params: { userId: string; companyId: string |
         iban: null,
         bic: null,
         logoUrl: null,
+        brandColor: null,
       },
     });
+    // Le logo identifie l'entreprise : il n'est pas conservé avec les factures anonymisées.
+    await tx.companyLogo.deleteMany({ where: { companyId } });
 
     // 4. Le journal d'audit garde la trace des actions (numérotation, émissions)
     //    mais plus aucune adresse email ni référence à l'utilisateur.

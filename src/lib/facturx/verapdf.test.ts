@@ -13,7 +13,10 @@ import {
   buildQuotePdfData,
   type InvoicePdfInput,
 } from "@/lib/pdf/build-data";
-import { renderPdfBuffer } from "@/lib/pdf/render";
+import { renderExportReportBuffer, renderPdfBuffer } from "@/lib/pdf/render";
+import { buildPaymentsReport, buildSalesReport } from "@/lib/export/report";
+import { legalFooterLines } from "@/lib/pdf/build-data";
+import { inspectLogo } from "@/lib/logo";
 import type { FacturXInput } from "./cii";
 
 /**
@@ -223,6 +226,54 @@ describe.skipIf(!vera)("conformité PDF/A-3b (veraPDF)", () => {
     const { compliant, report } = await validate("devis", await renderPdfBuffer(data));
     expect(compliant, report).toBe(true);
   }, 120_000);
+
+  describe("rapports PDF des exports comptables", () => {
+    const PNG = "iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAPklEQVR4nM3OQQEAEADAwFkQWTRWQywRPO0S3JhrH8IkTuIkTuIkTuIkTuIkTuIkTuIkTuIkTuIkTuL8HXi5DuUB/eSvaYAAAAAASUVORK5CYII=";
+    const logoOf = (b64: string) => {
+      const data = Buffer.from(b64, "base64");
+      const c = inspectLogo(data);
+      if (!c.ok) throw new Error(c.error);
+      return { data, format: c.format, width: c.width, height: c.height };
+    };
+    const company = (brandColor: string, withLogo: boolean) => ({
+      legalName: "Entreprise Démo & Associés",
+      brandColor,
+      logo: withLogo ? logoOf(PNG) : undefined,
+      footerLines: legalFooterLines({ ...franchiseSeller, nafCode: "6201Z" }),
+    });
+    const period = { from: new Date("2026-01-01T00:00:00Z"), to: new Date("2026-11-30T23:59:59Z") };
+    const generatedAt = new Date("2026-11-11T09:00:00Z");
+    const doc = (n: number, d: string, kind: "INVOICE" | "CREDIT_NOTE" = "INVOICE") => ({
+      kind,
+      number: `F-${n}`,
+      issueDate: new Date(`${d}T10:00:00Z`),
+      clientName: "Atelier Bois & Fer SAS",
+      lines: multiRate,
+      statusLabel: "Envoyée",
+    });
+
+    it("journal des ventes avec logo (PNG transparent) et couleur personnalisée", async () => {
+      const report = buildSalesReport([doc(1, "2026-03-03"), doc(2, "2026-04-10"), doc(3, "2026-04-11", "CREDIT_NOTE")]);
+      const pdf = await renderExportReportBuffer({ kind: "SALES", company: company("#dc2626", true), period, generatedAt, report });
+      const { compliant, report: verdict } = await validate("rapport-ventes-logo", pdf);
+      expect(compliant, verdict).toBe(true);
+    }, 120_000);
+
+    it("encaissements avec une couleur claire et sans logo", async () => {
+      const report = buildPaymentsReport([
+        { paidAt: new Date("2026-03-05T10:00:00Z"), invoiceNumber: "F-1", clientName: "Claire Martin", amountCents: 12000, methodLabel: "Virement", reference: "VIR-1" },
+      ]);
+      const pdf = await renderExportReportBuffer({ kind: "PAYMENTS", company: company("#fde047", false), period, generatedAt, report });
+      const { compliant, report: verdict } = await validate("rapport-paiements", pdf);
+      expect(compliant, verdict).toBe(true);
+    }, 120_000);
+
+    it("rapport d'une période vide", async () => {
+      const pdf = await renderExportReportBuffer({ kind: "SALES", company: company("#1e40af", true), period, generatedAt, report: buildSalesReport([]) });
+      const { compliant, report: verdict } = await validate("rapport-vide", pdf);
+      expect(compliant, verdict).toBe(true);
+    }, 120_000);
+  });
 
   it("contrôle négatif : un PDF ordinaire, sans métadonnées PDF/A, est bien refusé", async () => {
     const doc = await PDFDocument.create();

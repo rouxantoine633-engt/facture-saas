@@ -212,7 +212,10 @@ model Company {
   iban String?
   bic  String?
 
-  logoUrl String?
+  logoUrl String? // inutilisé : le logo téléversé est stocké dans CompanyLogo
+
+  // Couleur principale des rapports PDF (« #RRGGBB ») ; défaut de l'application si vide.
+  brandColor String? @db.VarChar(7)
 
   // Mentions légales configurables (mais jamais absentes du PDF généré)
   defaultPaymentTermsDays  Int    @default(30)
@@ -245,8 +248,21 @@ model Company {
   creditNotes CreditNote[]
   counters    DocumentCounter[]
   auditLogs   AuditLog[]
+  logo        CompanyLogo?
 
   @@map("companies")
+}
+
+// Logo de l'entreprise (PNG ou JPEG, petit). Table séparée : l'image ne doit pas être chargée à chaque
+// lecture de l'entreprise, qui se fait sur presque toutes les pages.
+model CompanyLogo {
+  companyId String   @id
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  data      Bytes
+  mimeType  String
+  updatedAt DateTime @updatedAt
+
+  @@map("company_logos")
 }
 
 // Compteur atomique par entreprise et par type de document — garantit une

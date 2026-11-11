@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth";
 import { getCompanyAction } from "./actions";
 import { CompanySettings } from "./CompanySettings";
 import type { CompanyInput } from "@/lib/validation/company";
+import { DEFAULT_BRAND_COLOR } from "@/lib/pdf/colors";
+import { prisma } from "@/lib/prisma";
+import { LogoUpload } from "./LogoUpload";
 
 export const metadata: Metadata = { title: "Mon entreprise" };
 
@@ -20,6 +23,12 @@ export default async function CompanyConfigurationPage({
   const isDemo = demo === "true";
 
   const company = await getCompanyAction();
+  // Seule la date de mise à jour est lue : l'image elle-même n'est servie que par /app/entreprise/logo.
+  const logoMeta = company
+    ? await prisma.companyLogo.findUnique({ where: { companyId: company.id }, select: { updatedAt: true } })
+    : null;
+  const hasLogo = Boolean(logoMeta);
+  const logoVersion = logoMeta?.updatedAt.getTime() ?? 0;
 
   const defaultValues: Partial<CompanyInput> = company
     ? {
@@ -31,6 +40,7 @@ export default async function CompanyConfigurationPage({
         vatRegime: company.vatRegime,
         vatNumber: company.vatNumber ?? "",
         nafCode: company.nafCode ?? "",
+        brandColor: company.brandColor ?? DEFAULT_BRAND_COLOR,
         rcsCity: company.rcsCity ?? "",
         rcsNumber: company.rcsNumber ?? "",
         rmCity: company.rmCity ?? "",
@@ -61,6 +71,7 @@ export default async function CompanyConfigurationPage({
           ? "Dernière étape avant le paiement : ces informations apparaîtront automatiquement sur tous tes devis et factures."
           : "Ces informations apparaîtront automatiquement sur tous tes devis et factures. Elles ne sont demandées qu'une seule fois."}
       </p>
+      {company && <LogoUpload hasLogo={hasLogo} version={logoVersion} />}
       <CompanySettings
         defaultValues={defaultValues}
         onboarding={isOnboarding}

@@ -174,6 +174,21 @@ export function CompanySettings({
       </section>
 
       <section className="space-y-4">
+        <h2 className="text-lg font-semibold">Apparence des rapports</h2>
+        <Field label="Couleur principale" error={errors.brandColor?.message}>
+          <input
+            {...register("brandColor")}
+            type="color"
+            className="h-10 w-20 cursor-pointer rounded-md border border-gray-300 bg-white p-1"
+          />
+        </Field>
+        <p className="text-sm text-gray-600">
+          Utilisée pour l'en-tête et les tableaux des rapports PDF (journal des ventes, encaissements). Une couleur
+          claire est automatiquement assombrie pour que les textes restent lisibles.
+        </p>
+      </section>
+
+      <section className="space-y-4">
         <h2 className="text-lg font-semibold">TVA</h2>
         <Field label="Régime de TVA" error={errors.vatRegime?.message} required>
           <select {...register("vatRegime")} className="input">

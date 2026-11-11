@@ -22,10 +22,13 @@ export async function buildPersonalDataExport(userId: string) {
     },
   });
 
+  // Le logo est une image binaire : exportée en base64 plutôt que sérialisée octet par octet.
+  const logo = company ? await prisma.companyLogo.findUnique({ where: { companyId: company.id } }) : null;
+
   return {
     exportedAt: new Date().toISOString(),
     format: "facture-saas.personal-data-export.v1",
     user,
-    company,
+    company: company && { ...company, logo: logo && { mimeType: logo.mimeType, dataBase64: Buffer.from(logo.data).toString("base64") } },
   };
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeHexColor } from "@/lib/pdf/colors";
 
 const SIREN_REGEX = /^\d{9}$/;
 const SIRET_REGEX = /^\d{14}$/;
@@ -43,6 +44,14 @@ export const companySchema = z
       .refine((v) => v === "" || NAF_REGEX.test(v), {
         message: "Le code NAF/APE comporte 4 chiffres et 1 lettre (ex : 6201Z)",
       })
+      .optional(),
+
+    // Couleur principale des rapports PDF ; vide = couleur par défaut de l'application.
+    brandColor: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || normalizeHexColor(v) !== null, { message: "La couleur doit être au format #RRGGBB" })
+      .transform((v) => (v === "" ? "" : normalizeHexColor(v)!))
       .optional(),
 
     rcsCity: z.string().trim().optional().or(z.literal("")),
