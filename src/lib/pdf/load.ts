@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { buyerSnapshotFromClient, sellerSnapshotFromCompany } from "@/lib/documents";
 import type { BuyerSnapshot, SellerSnapshot } from "@/lib/invoice-compliance";
 import type { FacturXInput } from "@/lib/facturx/cii";
+import { loadCompanyLogo } from "./logo-load";
 import { buildCreditNotePdfData, buildInvoicePdfData, buildQuotePdfData, type PdfDocumentData } from "./build-data";
 
 export interface LoadedPdf {
@@ -49,6 +50,7 @@ export async function loadInvoicePdf(company: Company, invoiceId: string): Promi
     recoveryIndemnityCents: (isDraft ? company.recoveryIndemnityCents : invoice.recoveryIndemnityCents) ?? 0,
     discountPolicyText: (isDraft ? company.discountPolicyText : invoice.discountPolicyText) ?? "",
   });
+  data.logo = await loadCompanyLogo(company.id);
 
   // Un brouillon n'est pas une facture (pas de numéro légal) ; les ventes aux particuliers
   // relèvent du e-reporting. Dans les deux cas : PDF simple, sans XML.
@@ -100,6 +102,7 @@ export async function loadQuotePdf(company: Company, quoteId: string): Promise<L
     seller: sellerSnapshotFromCompany(company),
     buyer: buyerSnapshotFromClient(quote.client),
   });
+  data.logo = await loadCompanyLogo(company.id);
 
   return { data, filename: `${quote.number}.pdf` };
 }
@@ -134,6 +137,7 @@ export async function loadCreditNotePdf(company: Company, creditNoteId: string):
     seller,
     buyer,
   });
+  data.logo = await loadCompanyLogo(company.id);
 
   const facturx: FacturXInput | undefined =
     buyer.type !== "BUSINESS"

@@ -3,6 +3,7 @@ import { vatMention, type BuyerSnapshot, type SellerSnapshot } from "@/lib/invoi
 import { formatDate } from "@/lib/labels";
 import { OPERATION_CATEGORY_LABELS, type OperationCategory } from "@/lib/operation-category";
 import { formatEurosForPdf } from "./format";
+import type { PdfLogo } from "./logo";
 
 const LEGAL_FORM_LABELS: Record<string, string> = {
   AUTO_ENTREPRENEUR: "Entrepreneur individuel (micro-entrepreneur)",
@@ -48,6 +49,8 @@ export interface PdfDocumentData {
   bankLines: string[];
   /** Mentions légales de l'émetteur, répétées en pied de chaque page. */
   footerLines: string[];
+  /** Logo de l'entreprise, affiché en haut à gauche ; ajouté au chargement (voir `load.ts`). */
+  logo?: PdfLogo;
 }
 
 /** Adresse complète sur une ligne ; le pays n'est précisé que s'il n'est pas la France. */

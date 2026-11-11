@@ -227,6 +227,34 @@ describe.skipIf(!vera)("conformité PDF/A-3b (veraPDF)", () => {
     expect(compliant, report).toBe(true);
   }, 120_000);
 
+  describe("logo en en-tête des documents", () => {
+    const PNG = "iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAPklEQVR4nM3OQQEAEADAwFkQWTRWQywRPO0S3JhrH8IkTuIkTuIkTuIkTuIkTuIkTuIkTuIkTuIkTuL8HXi5DuUB/eSvaYAAAAAASUVORK5CYII=";
+    const JPEG = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAMAB4DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDgqKKK8M/VAooooA//2Q==";
+    const logoOf = (b64: string) => {
+      const data = Buffer.from(b64, "base64");
+      const c = inspectLogo(data);
+      if (!c.ok) throw new Error(c.error);
+      return { data, format: c.format, width: c.width, height: c.height };
+    };
+
+    it("facture Factur-X avec un logo PNG transparent", async () => {
+      const input = invoiceInput(seller, business, multiRate);
+      const data = { ...buildInvoicePdfData(input), logo: logoOf(PNG) };
+      const pdf = await renderPdfBuffer(data, facturxOf("INVOICE", input, data));
+      const { compliant, report } = await validate("facture-logo-png", pdf);
+      expect(compliant, report).toBe(true);
+    }, 120_000);
+
+    it("devis avec un logo JPEG", async () => {
+      const data = {
+        ...buildQuotePdfData({ number: "DEV-2026-0001", issueDate: new Date("2026-11-10T09:30:00Z"), lines: multiRate, seller, buyer: business }),
+        logo: logoOf(JPEG),
+      };
+      const { compliant, report } = await validate("devis-logo-jpeg", await renderPdfBuffer(data));
+      expect(compliant, report).toBe(true);
+    }, 120_000);
+  });
+
   describe("rapports PDF des exports comptables", () => {
     const PNG = "iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAPklEQVR4nM3OQQEAEADAwFkQWTRWQywRPO0S3JhrH8IkTuIkTuIkTuIkTuIkTuIkTuIkTuIkTuIkTuL8HXi5DuUB/eSvaYAAAAAASUVORK5CYII=";
     const logoOf = (b64: string) => {
