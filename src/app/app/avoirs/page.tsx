@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
 import { formatDate } from "@/lib/labels";
+
+export const metadata: Metadata = { title: "Avoirs" };
 
 export default async function CreditNotesPage() {
   const { company } = await requireActiveCompany();

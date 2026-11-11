@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -20,6 +21,8 @@ import { ReminderButton } from "@/components/ReminderButton";
 import { deleteDraftInvoiceAction, emitInvoiceAction, sendInvoiceReminderAction } from "../actions";
 import { PayForm } from "./PayForm";
 import { SendEmailForm } from "@/components/SendEmailForm";
+
+export const metadata: Metadata = { title: "Facture" };
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

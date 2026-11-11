@@ -26,6 +26,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Preuve de l'acceptation des CGU/CGV à l'inscription (date + version des conditions).
+  termsAcceptedAt DateTime?
+  termsVersion    String?
+
   accounts Account[]
   sessions Session[]
   company  Company?

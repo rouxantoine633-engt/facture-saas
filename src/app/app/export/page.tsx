@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { requireActiveCompany } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Export comptable" };
 
 export default async function ExportPage() {
   await requireActiveCompany();

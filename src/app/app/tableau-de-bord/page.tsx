@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireActiveCompany } from "@/lib/session";
 import { formatCentsToEuros } from "@/lib/money";
@@ -5,6 +6,8 @@ import { getDashboardData } from "@/lib/dashboard-data";
 import { inter, display } from "@/lib/fonts";
 import { DashboardKpis, type KpiItem } from "@/components/dashboard/DashboardKpis";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
+
+export const metadata: Metadata = { title: "Tableau de bord" };
 
 export default async function DashboardPage() {
   const { company } = await requireActiveCompany();
@@ -40,10 +43,10 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className={`${inter.variable} ${display.variable} bg-[#07070a] font-sans text-white`}>
+    <div className={`${inter.variable} ${display.variable} on-dark bg-[#07070a] font-sans text-white`}>
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <h1 className={`${display.className} text-2xl font-semibold tracking-tight sm:text-3xl`}>Tableau de bord</h1>
-        <p className="mt-1 text-white/50">Bienvenue, {company.legalName}.</p>
+        <p className="mt-1 text-white/60">Bienvenue, {company.legalName}.</p>
 
         {data.overdueCount > 0 && (
           <Link
@@ -65,7 +68,7 @@ export default async function DashboardPage() {
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-5 sm:p-6">
           <h2 className={`${display.className} text-lg font-semibold`}>Évolution du chiffre d&apos;affaires encaissé</h2>
-          <p className="text-sm text-white/40">Paiements reçus, 6 derniers mois</p>
+          <p className="text-sm text-white/60">Paiements reçus, 6 derniers mois</p>
           <div className="mt-6">
             <RevenueChart series={data.revenueSeries} />
           </div>
@@ -82,7 +85,7 @@ export default async function DashboardPage() {
             Voir toutes les factures
           </Link>
           {data.draftInvoices > 0 && (
-            <span className="text-sm text-white/40">
+            <span className="text-sm text-white/60">
               {data.draftInvoices} brouillon{data.draftInvoices > 1 ? "s" : ""} de facture en attente
             </span>
           )}

@@ -183,7 +183,7 @@ export function CreditNoteForm({
                   aria-label={`Supprimer la ligne ${i + 1}`}
                   className="rounded-md border border-gray-300 px-2 py-2 text-sm hover:bg-gray-100 disabled:opacity-40"
                 >
-                  ✕
+                  <span aria-hidden="true">✕</span>
                 </button>
               </div>
             </div>

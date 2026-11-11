@@ -16,6 +16,30 @@ body {
   outline-offset: 2px;
 }
 
+/* Sur fond sombre, le bleu de la marque n'atteint pas le contraste minimal de 3:1 (WCAG 1.4.11) : teinte claire. */
+.on-dark :focus-visible,
+.on-dark:focus-visible {
+  outline-color: #c7d2fe;
+}
+
+/* Texte indicatif lisible : le gris par défaut des navigateurs n'atteint pas le contraste minimal de 4,5:1. */
+::placeholder {
+  color: theme("colors.gray.500");
+  opacity: 1;
+}
+
+/* Respect de la préférence « réduire les animations » (RGAA 13.8 / WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer components {
   .input {
     @apply w-full rounded-md border border-gray-300 px-3 py-2 focus:border-brand-500 focus:outline-none;

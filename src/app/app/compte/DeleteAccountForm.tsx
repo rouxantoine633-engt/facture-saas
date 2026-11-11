@@ -6,9 +6,12 @@ import { deleteAccountAction } from "./actions";
 export function DeleteAccountForm({
   email,
   strategy,
+  hasSubscription = false,
 }: {
   email: string;
   strategy: "HARD_DELETE" | "ANONYMIZE";
+  /** Abonnement Stripe en cours : il sera résilié immédiatement. */
+  hasSubscription?: boolean;
 }) {
   const [confirmation, setConfirmation] = useState("");
   const [understood, setUnderstood] = useState(false);
@@ -39,6 +42,16 @@ export function DeleteAccountForm({
           commerce). Vos informations personnelles (identité, coordonnées, mot de passe) seront anonymisées et votre
           connexion définitivement révoquée, mais les factures et avoirs déjà émis resteront visibles avec les
           mentions qu'ils portaient au moment de leur émission.
+        </p>
+      )}
+      {hasSubscription && (
+        <p className="text-sm text-red-900">
+          Votre abonnement sera résilié immédiatement et ne sera plus prélevé. La période mensuelle déjà payée n'est pas
+          remboursée, sauf dans les cas prévus par les{" "}
+          <a href="/cgv#remboursement" className="underline">
+            conditions de remboursement
+          </a>
+          .
         </p>
       )}
       <div>

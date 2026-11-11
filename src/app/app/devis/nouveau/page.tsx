@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { QuoteForm } from "@/components/QuoteForm";
 import { createQuoteAction } from "../actions";
+
+export const metadata: Metadata = { title: "Nouveau devis" };
 
 export default async function NewQuotePage() {
   const { company } = await requireActiveCompany();

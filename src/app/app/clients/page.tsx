@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { ClientForm } from "./ClientForm";
+
+export const metadata: Metadata = { title: "Clients" };
 
 export default async function ClientsPage() {
   const { company } = await requireActiveCompany();

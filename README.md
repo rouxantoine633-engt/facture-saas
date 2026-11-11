@@ -425,10 +425,11 @@ un expert-comptable et/ou un juriste avant mise en production :
     ni sauvegarde de secours n'est purgé (hors périmètre technique de ce
     service). Ce mécanisme n'a pas été exécuté ni vérifié faute de Node
     installé sur la machine de développement.
-15. **RGPD — reste à faire hors code** : politique de confidentialité, base
-    légale de traitement par finalité, registre des traitements, DPA avec
-    Brevo (et l'hébergeur base de données), et procédure documentée pour une
-    demande d'accès/rectification reçue autrement que via `/app/compte`.
+15. **RGPD — reste à faire hors code** : registre des traitements, DPA avec
+    Stripe, Brevo et l'hébergeur (site et base de données), et procédure
+    documentée pour une demande d'accès/rectification reçue autrement que via
+    `/app/compte`. La politique de confidentialité et la base légale par
+    finalité sont publiées (voir « Conformité légale… » en fin de document).
 16. **Abonnement Stripe (2026-09-29, mis à jour 2026-09-29)** : le webhook
     (`/api/stripe/webhook`) écoute `checkout.session.completed` et
     `customer.subscription.created/updated/deleted`, synchronise
@@ -468,3 +469,50 @@ un expert-comptable et/ou un juriste avant mise en production :
    applique des règles génériques par forme juridique (RCS, capital social)
    mais ne peut pas vérifier l'exactitude juridique des informations
    saisies par l'utilisateur.
+
+## Conformité légale, cookies, RGPD et accessibilité (2026-11-11)
+
+**Pages publiques** (sans connexion) : `/mentions-legales`, `/cgu`, `/cgv`
+(prix, résiliation, rétractation, remboursement, médiation),
+`/confidentialite`, `/cookies`, `/accessibilite`. Les informations communes
+(éditeur, prix, version des conditions) sont dans `src/lib/legal.ts` : c'est
+le seul fichier à modifier pour changer une identité ou une version. Les
+valeurs que l'éditeur doit fournir lui-même (hébergeur, fournisseur de base
+de données, médiateur de la consommation) y figurent sous `TO_COMPLETE` et
+s'affichent surlignées tant qu'elles ne sont pas renseignées.
+
+**À chaque modification substantielle des CGU/CGV**, changer `TERMS_VERSION`
+(`src/lib/legal.ts`) : la version acceptée est enregistrée à l'inscription
+(`User.termsAcceptedAt`, `User.termsVersion`).
+
+**Cookies** : seuls trois cookies techniques d'authentification sont déposés
+(`authjs.session-token`, `authjs.csrf-token`, `authjs.callback-url`), exemptés
+de consentement. Aucun outil de mesure d'audience ni script tiers ; polices
+auto-hébergées par `next/font`. **Il n'y a donc volontairement pas de bandeau
+de consentement.** Si un outil de mesure ou un service tiers est ajouté, il
+faut alors un bandeau (refus aussi simple que l'acceptation, aucun dépôt
+avant choix) et mettre à jour `/cookies` et `/confidentialite`. Le test
+`src/lib/legal.test.ts` échoue si une dépendance de suivi connue apparaît dans
+`package.json`.
+
+**Minimisation** : les jetons OAuth Google et la photo de profil ne sont plus
+enregistrés (`src/lib/auth-adapter.ts`, migration de nettoyage des lignes
+existantes). La suppression du compte résilie l'abonnement Stripe avant de
+fermer le compte (`src/lib/stripe-subscription.ts`) et y renonce si Stripe
+est injoignable.
+
+**Accessibilité** : titre unique par page, lien d'évitement, `<main
+id="contenu">` partout, repères de navigation nommés, contrastes corrigés
+(texte clair sur fond sombre ≥ 60 % d'opacité, indicateur de focus clair sur
+fond sombre), respect de `prefers-reduced-motion`, tiroir mobile utilisable au
+clavier. Vérifié avec axe-core (WCAG 2.1 AA + bonnes pratiques) sur les pages
+publiques et sur toutes les pages de l'application : aucune violation. **Ce
+n'est pas un audit RGAA** : un audit manuel (lecteur d'écran, navigation au
+clavier complète) reste à faire, et la déclaration `/accessibilite` ne
+prétend donc pas à la conformité.
+
+**Ce qui reste à la charge de l'éditeur** : renseigner `TO_COMPLETE`, désigner
+un médiateur de la consommation, signer les DPA, faire relire les CGV par un
+juriste, et décider d'offrir un bouton de résiliation en libre-service (la
+résiliation se fait aujourd'hui par email ; le portail client Stripe est la
+solution la plus simple).

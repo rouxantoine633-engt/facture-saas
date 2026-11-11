@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireActiveCompany } from "@/lib/session";
 import { CreditNoteForm } from "./CreditNoteForm";
+
+export const metadata: Metadata = { title: "Nouvel avoir" };
 
 export default async function NewCreditNotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

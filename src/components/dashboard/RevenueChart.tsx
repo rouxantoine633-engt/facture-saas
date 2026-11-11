@@ -66,7 +66,7 @@ export function RevenueChart({ series }: { series: MonthlyRevenuePoint[] }) {
           return (
             <g key={g}>
               <line x1={PAD_LEFT} y1={y} x2={W - PAD_RIGHT} y2={y} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-              <text x={PAD_LEFT} y={y - 4} fontSize={9} fill="rgba(255,255,255,0.3)">
+              <text x={PAD_LEFT} y={y - 4} fontSize={11} fill="rgba(255,255,255,0.65)">
                 {formatCompactEuros(Math.round(max * g))}
               </text>
             </g>
@@ -127,7 +127,7 @@ export function RevenueChart({ series }: { series: MonthlyRevenuePoint[] }) {
         ))}
       </svg>
 
-      <div className="mt-1 flex justify-between px-1 text-xs text-white/40">
+      <div className="mt-1 flex justify-between px-1 text-xs text-white/60">
         {series.map((p, i) => (
           <span key={p.monthKey} className={i === activeIndex ? "font-medium text-white/70" : undefined}>
             {p.label}
@@ -143,7 +143,7 @@ export function RevenueChart({ series }: { series: MonthlyRevenuePoint[] }) {
             top: `${Math.max(0, (active.y / H) * 100 - 18)}%`,
           }}
         >
-          <p className="text-xs text-white/50">{active.label}</p>
+          <p className="text-xs text-white/60">{active.label}</p>
           <p className={`${display.className} text-sm font-semibold text-white`}>
             {formatCompactEuros(active.totalCents)}
           </p>

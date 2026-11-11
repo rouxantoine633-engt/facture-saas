@@ -32,7 +32,7 @@ export function SubscribeButton() {
         disabled={pending}
         className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
-        {pending ? "Redirection vers Stripe…" : "S'abonner — 39 € / mois"}
+        {pending ? "Redirection vers Stripe…" : "S’abonner avec obligation de paiement — 39 € / mois"}
       </button>
       {error && (
         <p role="alert" className="mt-2 text-sm text-red-600">

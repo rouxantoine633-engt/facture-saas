@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Compte supprimé" };
 export default function AccountDeletedPage() {
   return (
     <div className="mx-auto mt-24 max-w-md text-center">

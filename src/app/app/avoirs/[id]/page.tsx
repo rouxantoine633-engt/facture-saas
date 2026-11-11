@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,8 @@ import { formatDate } from "@/lib/labels";
 import type { BuyerSnapshot, SellerSnapshot } from "@/lib/invoice-compliance";
 import { LinesTable } from "@/components/LinesTable";
 import { SendEmailForm } from "@/components/SendEmailForm";
+
+export const metadata: Metadata = { title: "Avoir" };
 
 export default async function CreditNoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

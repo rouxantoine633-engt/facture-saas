@@ -5,9 +5,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validation/auth";
 import { matchesVipCode } from "@/lib/vip-demo";
+import { TERMS_VERSION } from "@/lib/legal";
 
 export interface RegisterFormState {
   error?: string;
+  /** Champ à l'origine de l'erreur, pour le signaler et y replacer le focus. */
+  field?: "name" | "email" | "password" | "acceptTerms";
   success?: boolean;
 }
 
@@ -19,23 +22,25 @@ export async function registerAction(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    acceptTerms: formData.get("acceptTerms"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Données invalides" };
+    const issue = parsed.error.issues[0];
+    return { error: issue?.message ?? "Données invalides", field: issue?.path[0] as RegisterFormState["field"] };
   }
 
   const { name, email, password } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    return { error: "Un compte existe déjà avec cette adresse email." };
+    return { error: "Un compte existe déjà avec cette adresse email.", field: "email" };
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
   await prisma.user.create({
-    data: { name, email, passwordHash },
+    data: { name, email, passwordHash, termsAcceptedAt: new Date(), termsVersion: TERMS_VERSION },
   });
 
   return { success: true };

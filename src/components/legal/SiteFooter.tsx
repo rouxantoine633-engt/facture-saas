@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { display } from "@/lib/fonts";
 import { LogoMark } from "@/components/brand/LogoMark";
+import { LEGAL_DOCUMENTS } from "@/lib/legal";
 
 export function SiteFooter() {
   return (
@@ -12,7 +13,7 @@ export function SiteFooter() {
             <span className={`${display.className} text-sm font-semibold text-white`}>Onyx</span>
           </Link>
 
-          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/50">
+          <nav aria-label="Navigation du pied de page" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60">
             <Link href="/#fonctionnalites" className="transition-colors hover:text-white">
               Fonctionnalités
             </Link>
@@ -29,18 +30,14 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-8 flex flex-col gap-4 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <nav aria-label="Mentions légales" className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/40">
-            <Link href="/mentions-legales" className="transition-colors hover:text-white/70">
-              Mentions légales
-            </Link>
-            <Link href="/cgu" className="transition-colors hover:text-white/70">
-              CGU / CGV
-            </Link>
-            <Link href="/confidentialite" className="transition-colors hover:text-white/70">
-              Confidentialité &amp; RGPD
-            </Link>
+          <nav aria-label="Informations légales" className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/60">
+            {LEGAL_DOCUMENTS.map((d) => (
+              <Link key={d.href} href={d.href} className="transition-colors hover:text-white">
+                {d.label}
+              </Link>
+            ))}
           </nav>
-          <p className="text-xs text-white/30">© 2026 Onyx. Tous droits réservés.</p>
+          <p className="text-xs text-white/60">© 2026 Onyx. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

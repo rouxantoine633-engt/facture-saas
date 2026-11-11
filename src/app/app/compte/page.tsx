@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +9,8 @@ import { SubscriptionStatusRefresher } from "@/components/SubscriptionStatusRefr
 import { VipAccessForm } from "@/components/VipAccessForm";
 import { hasActiveAccess, SUBSCRIPTION_STATUS_LABELS } from "@/lib/subscription";
 import { formatDate } from "@/lib/labels";
+
+export const metadata: Metadata = { title: "Mes données" };
 
 export default async function AccountPage({
   searchParams,
@@ -21,7 +24,7 @@ export default async function AccountPage({
 
   const company = await prisma.company.findUnique({
     where: { ownerId: session.user.id },
-    select: { id: true, subscriptionStatus: true, subscriptionCurrentPeriodEnd: true, isVipAccess: true },
+    select: { id: true, subscriptionStatus: true, subscriptionCurrentPeriodEnd: true, isVipAccess: true, stripeSubscriptionId: true },
   });
   const preview = company ? await previewAccountDeletion(company.id) : { strategy: "HARD_DELETE" as const };
   const isActive = company ? hasActiveAccess(company.subscriptionStatus, company.isVipAccess) : false;
@@ -56,7 +59,7 @@ export default async function AccountPage({
         <h2 className="font-semibold">Abonnement</h2>
         <p className="mt-1 text-sm">
           Statut :{" "}
-          <span className={isActive ? "font-medium text-green-700" : "font-medium text-gray-700"}>
+          <span className={isActive ? "font-medium text-green-800" : "font-medium text-gray-700"}>
             {company?.isVipAccess
               ? "Accès VIP (démonstration)"
               : SUBSCRIPTION_STATUS_LABELS[company?.subscriptionStatus ?? "NONE"]}
@@ -65,6 +68,16 @@ export default async function AccountPage({
             <> · prochain renouvellement le {formatDate(company.subscriptionCurrentPeriodEnd)}</>
           )}
         </p>
+        {isActive && !company?.isVipAccess && (
+          <p className="mt-2 text-sm text-gray-600">
+            Pour résilier votre abonnement tout en gardant votre compte, écrivez-nous depuis l'adresse de votre compte :
+            la résiliation prend effet à la fin de la période payée. Voir les{" "}
+            <a href="/cgv#remboursement" className="text-brand-700 underline">
+              conditions de remboursement
+            </a>
+            .
+          </p>
+        )}
         {!isActive && (
           <>
             <p className="mt-1 text-sm text-gray-600">
@@ -73,6 +86,14 @@ export default async function AccountPage({
             <div className="mt-3">
               <SubscribeButton />
             </div>
+            <p className="mt-2 text-xs text-gray-600">
+              En vous abonnant, vous demandez l'accès immédiat au service. Si vous êtes consommateur et vous rétractez
+              dans les 14 jours, vous ne devez que le montant proportionnel au service utilisé. Voir les{" "}
+              <a href="/cgv#retractation" className="text-brand-700 underline">
+                conditions de rétractation et de remboursement
+              </a>
+              .
+            </p>
             {isDemo && <VipAccessForm />}
           </>
         )}
@@ -88,7 +109,11 @@ export default async function AccountPage({
         </a>
       </section>
 
-      <DeleteAccountForm email={session.user.email} strategy={preview.strategy} />
+      <DeleteAccountForm
+        email={session.user.email}
+        strategy={preview.strategy}
+        hasSubscription={Boolean(company?.stripeSubscriptionId) && isActive && !company?.isVipAccess}
+      />
     </div>
   );
 }
